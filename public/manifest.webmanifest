@@ -1,0 +1,18 @@
+{
+  "id": "/nhan-vien/",
+  "name": "Thống Nhất Logistic – Nhân viên & Lái xe",
+  "short_name": "Thống Nhất",
+  "description": "Xem chuyến, chụp biên bản giao nhận và bill cho lái xe Thống Nhất Logistic.",
+  "lang": "vi",
+  "start_url": "/nhan-vien/?source=app",
+  "scope": "/nhan-vien/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F6FA",
+  "theme_color": "#0B2545",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

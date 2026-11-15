@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { supabase, LOGIN_DOMAIN, displayLogin } from '../../lib/supabase';
 import Logo from '../Logo';
 import DriverApp from './DriverApp';
+import InstallApp, { useServiceWorker } from './InstallApp';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -42,6 +43,7 @@ function Login() {
         {err && <p className="err" role="alert">{err}</p>}
         <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
         <p className="muted small">Khu vực dành riêng cho nhân viên. Liên hệ quản lý nếu cần tài khoản.</p>
+        <InstallApp />
       </form>
     </div>
   );
@@ -49,6 +51,7 @@ function Login() {
 
 export default function StaffShell({ children }) {
   const [session, setSession] = useState(undefined); // undefined = đang kiểm tra
+  useServiceWorker();
   const pathname = usePathname() || '';
 
   useEffect(() => {

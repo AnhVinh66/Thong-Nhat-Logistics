@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, orderCode } from '../../lib/supabase';
 import Icon from '../Icon';
 import DeliveryDocs, { uploadDocs } from './DeliveryDocs';
+import InstallApp from './InstallApp';
 
 const todayISO = () => {
   const d = new Date();
@@ -196,6 +197,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
         })}
 
         {!loading && <button className="drv-reload" onClick={load}>Tải lại danh sách</button>}
+        <InstallApp compact />
       </main>
 
       {toast && <div className={`drv-toast ${toast.ok ? '' : 'bad'}`} role="status">{toast.text}</div>}

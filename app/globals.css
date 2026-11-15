@@ -342,3 +342,39 @@ code { background: var(--soft); padding: 1px 6px; border-radius: 6px; }
 .drv-toast { position: fixed; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 300; background: var(--ok); color: #fff; font-weight: 700; padding: 14px 16px; border-radius: 12px; box-shadow: var(--shadow); text-align: center; }
 .drv-toast.bad { background: var(--err); }
 .drv-shot span { color: inherit; }
+
+/* ===== Cài app (PWA) ===== */
+.install { margin-top: 4px; display: grid; gap: 6px; justify-items: center; text-align: center; }
+.install.compact { margin-top: 4px; }
+.install-btn { width: 100%; gap: 10px; }
+.install-btn img { border-radius: 6px; }
+.install-hint { margin: 0; font-size: .92rem; color: var(--text); background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 12px; text-align: left; }
+.ios-share { display: inline-flex; vertical-align: -3px; color: #0b57d0; }
+.install-intro { display: flex; gap: 18px; align-items: center; margin-bottom: 22px; flex-wrap: wrap; }
+.install-intro img { border-radius: 18px; flex: none; }
+.guide-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.guide h2 { font-size: 1.35rem; margin-bottom: .2em; }
+.guide-steps { list-style: decimal; padding-left: 22px; display: grid; gap: 10px; margin: 0 0 18px; }
+.kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 26px; padding: 0 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft); vertical-align: -6px; color: var(--navy); }
+.phones { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.phone { margin: 0; }
+.phone-screen { position: relative; aspect-ratio: 9 / 16; max-width: 190px; margin: 0 auto; border: 6px solid #1b2a41; border-radius: 22px; background: #fff; overflow: hidden; font-size: .72rem; }
+.phone figcaption { text-align: center; font-size: .82rem; color: var(--muted); margin-top: 6px; }
+.ph-bar { display: flex; align-items: center; gap: 4px; padding: 6px; background: var(--soft); border-bottom: 1px solid var(--line); }
+.ph-url { flex: 1; background: #fff; border-radius: 99px; padding: 3px 8px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-dots { display: inline-flex; color: var(--navy); outline: 2px solid var(--orange); border-radius: 50%; }
+.ph-menu { position: absolute; right: 6px; top: 34px; width: 70%; background: #fff; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.18); display: grid; }
+.ph-menu span, .ph-sheet span { padding: 7px 10px; border-bottom: 1px solid var(--soft); }
+.hl { background: #fff3e8; color: var(--orange-d); font-weight: 800; outline: 2px solid var(--orange); outline-offset: -2px; }
+.ph-dialog { position: absolute; inset: auto 8px 30% 8px; background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.2); padding: 12px; display: grid; justify-items: center; gap: 4px; text-align: center; }
+.ph-dialog img { border-radius: 10px; }
+.ph-dialog-btns { display: flex; gap: 8px; margin-top: 6px; }
+.ph-dialog-btns span { padding: 4px 10px; border-radius: 6px; }
+.ph-page { position: absolute; inset: 0 0 34px 0; background: repeating-linear-gradient(180deg, #fff 0 14px, var(--soft) 14px 16px); }
+.ph-bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 34px; background: var(--soft); border-top: 1px solid var(--line); display: flex; justify-content: space-around; align-items: center; color: #0b57d0; font-size: 1rem; }
+.hl-icon { display: inline-flex; padding: 3px; border-radius: 6px; outline: 2px solid var(--orange); background: #fff3e8; }
+.ph-sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 12px 12px 0 0; box-shadow: 0 -6px 18px rgba(0,0,0,.15); display: grid; padding-top: 6px; }
+@media (max-width: 860px) { .guide-grid { grid-template-columns: 1fr; } }
+.phones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.phone-screen { width: 100%; }
+.ph-dialog { inset: 22% 8px auto 8px; }

@@ -14,4 +14,13 @@ ExpiresByType image/svg+xml "access plus 1 month"
 ExpiresByType text/css "access plus 1 year"
 ExpiresByType application/javascript "access plus 1 year"
 ExpiresByType font/woff2 "access plus 1 year"
+ExpiresByType image/png "access plus 1 month"
+</IfModule>
+
+# App cài trên điện thoại (PWA)
+AddType application/manifest+json .webmanifest
+<IfModule mod_headers.c>
+<FilesMatch "^(sw\.js|manifest\.webmanifest|offline\.html)$">
+Header set Cache-Control "no-cache"
+</FilesMatch>
 </IfModule>
