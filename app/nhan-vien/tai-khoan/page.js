@@ -1,29 +1,42 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../../../lib/supabase';
-import { drivers } from '../../../lib/site';
+import { supabase, displayLogin } from '../../../lib/supabase';
+import Modal from '../../../components/staff/Modal';
 
-const roleLabel = { staff: 'Văn phòng (toàn quyền)', driver: 'Lái xe' };
+const roleLabel = { staff: 'Văn phòng', driver: 'Lái xe' };
+const blank = { name: '', username: '', password: '', role: 'driver' };
+
+// Gợi ý tên đăng nhập từ họ tên: "Nguyễn Thế Trang" -> "trang"
+const suggestUsername = (name) =>
+  (name.trim().split(/\s+/).pop() || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, '');
 
 export default function Page() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [form, setForm] = useState({ email: '', role: 'driver', driver: drivers[0] || '' });
+  const [form, setForm] = useState(blank);
+  const [userTouched, setUserTouched] = useState(false);
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
   const [me, setMe] = useState('');
+  const [editing, setEditing] = useState(null); // { user_id, name, role, password }
+  const [editMsg, setEditMsg] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     const { data: u } = await supabase.auth.getUser();
     setMe(u?.user?.id || '');
-    const { data, error } = await supabase.from('staff_roles').select('*').order('role').order('email');
-    if (error) setErr('Chưa có bảng phân quyền. Hãy chạy supabase/driver-role.sql trên Supabase.');
+    const { data, error } = await supabase.rpc('list_staff_users');
+    if (error) setErr('Chưa bật tính năng tạo tài khoản. Hãy chạy supabase/simple-users.sql trên Supabase.');
     else {
       setErr('');
-      setRows(data);
+      setRows(data || []);
     }
     setLoading(false);
   }, []);
@@ -32,91 +45,160 @@ export default function Page() {
     load();
   }, [load]);
 
-  async function assign(email, role, driver) {
-    setBusy(true);
-    setMsg(null);
-    const { error } = await supabase.rpc('assign_role', { p_email: email, p_role: role, p_driver: driver || null });
-    setBusy(false);
-    if (error) {
-      setMsg({ ok: false, text: error.message || 'Không lưu được. Vui lòng thử lại.' });
-      return false;
-    }
-    load();
-    return true;
-  }
+  const set = (k) => (e) => {
+    const v = e.target.value;
+    setForm((f) => {
+      const next = { ...f, [k]: v };
+      if (k === 'name' && !userTouched) next.username = suggestUsername(v);
+      return next;
+    });
+    if (k === 'username') setUserTouched(true);
+  };
 
-  async function onSubmit(e) {
+  async function create(e) {
     e.preventDefault();
-    if (!form.email.trim()) return setMsg({ ok: false, text: 'Vui lòng nhập email tài khoản.' });
-    if (await assign(form.email, form.role, form.role === 'driver' ? form.driver : null)) {
-      setMsg({ ok: true, text: `Đã phân quyền ${roleLabel[form.role]} cho ${form.email.trim()}.` });
-      setForm((f) => ({ ...f, email: '' }));
+    setMsg(null);
+    if (!form.name.trim() || !form.username.trim() || !form.password) {
+      return setMsg({ ok: false, text: 'Vui lòng nhập họ tên, tên đăng nhập và mật khẩu.' });
     }
+    setBusy(true);
+    const { error } = await supabase.rpc('create_staff_user', {
+      p_username: form.username, p_password: form.password, p_role: form.role, p_name: form.name,
+    });
+    setBusy(false);
+    if (error) return setMsg({ ok: false, text: error.message || 'Không tạo được tài khoản.' });
+    setMsg({
+      ok: true,
+      text: `Đã tạo tài khoản ${roleLabel[form.role]}: đăng nhập "${form.username.trim().toLowerCase()}", mật khẩu "${form.password}". Hãy gửi thông tin này cho ${form.name.trim()}.`,
+    });
+    setForm(blank);
+    setUserTouched(false);
+    load();
   }
 
-  async function revoke(r) {
-    if (!window.confirm(`Thu hồi quyền của ${r.email}? Tài khoản này sẽ không xem được gì nữa.`)) return;
-    if (await assign(r.email, 'none')) setMsg({ ok: true, text: `Đã thu hồi quyền của ${r.email}.` });
+  async function saveEdit(e) {
+    e.preventDefault();
+    setEditMsg(null);
+    setBusy(true);
+    const r = editing;
+    const up = await supabase.rpc('update_staff_user', { p_user_id: r.user_id, p_role: r.role, p_name: r.name });
+    if (up.error) {
+      setBusy(false);
+      return setEditMsg({ ok: false, text: up.error.message });
+    }
+    if (r.password) {
+      const pw = await supabase.rpc('set_staff_password', { p_user_id: r.user_id, p_password: r.password });
+      if (pw.error) {
+        setBusy(false);
+        return setEditMsg({ ok: false, text: pw.error.message });
+      }
+    }
+    setBusy(false);
+    setEditing(null);
+    setMsg({ ok: true, text: r.password ? `Đã lưu. Mật khẩu mới: "${r.password}".` : 'Đã lưu thay đổi.' });
+    load();
   }
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  async function remove(r) {
+    const who = r.full_name || displayLogin(r.email);
+    if (!window.confirm(`Xoá hẳn tài khoản của ${who}? Người này sẽ không đăng nhập được nữa. Thao tác không thể hoàn tác.`)) return;
+    const { error } = await supabase.rpc('delete_staff_user', { p_user_id: r.user_id });
+    if (error) return setMsg({ ok: false, text: error.message });
+    setMsg({ ok: true, text: `Đã xoá tài khoản của ${who}.` });
+    load();
+  }
 
   return (
     <>
-      <h1 style={{ fontSize: '1.8rem' }}>Tài khoản & phân quyền</h1>
+      <h1 style={{ fontSize: '1.8rem' }}>Tài khoản</h1>
 
       <div className="card" style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: '1.15rem' }}>Thêm hoặc đổi quyền</h2>
-        <ol className="muted small" style={{ paddingLeft: 18, listStyle: 'decimal', marginBottom: 14 }}>
-          <li>Tạo tài khoản trong Supabase: Authentication → Users → Add user (tick “Auto Confirm User”).</li>
-          <li>Nhập email đó dưới đây và chọn vai trò. Lái xe phải chọn đúng tên để thấy chuyến của mình.</li>
-        </ol>
-        <form className="form" onSubmit={onSubmit} noValidate>
-          <div className="grid-3" style={{ gap: 12 }}>
+        <h2 style={{ fontSize: '1.15rem' }}>Tạo tài khoản mới</h2>
+        <form className="form" onSubmit={create} noValidate>
+          <div className="grid-4" style={{ gap: 12 }}>
             <div className="field">
-              <label htmlFor="a-email">Email tài khoản *</label>
-              <input id="a-email" type="email" value={form.email} onChange={set('email')} autoComplete="off" />
+              <label htmlFor="n-name">Họ tên *</label>
+              <input id="n-name" value={form.name} onChange={set('name')} placeholder="VD: Nguyễn Thế Trang" autoComplete="off" />
             </div>
             <div className="field">
-              <label htmlFor="a-role">Vai trò</label>
-              <select id="a-role" value={form.role} onChange={set('role')}>
+              <label htmlFor="n-user">Tên đăng nhập *</label>
+              <input id="n-user" value={form.username} onChange={set('username')} placeholder="VD: trang"
+                autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="off" />
+            </div>
+            <div className="field">
+              <label htmlFor="n-pass">Mật khẩu * <span className="muted small" style={{ color: 'var(--muted)' }}>(ít nhất 6 ký tự)</span></label>
+              <input id="n-pass" type="text" value={form.password} onChange={set('password')} autoComplete="new-password" />
+            </div>
+            <div className="field">
+              <label htmlFor="n-role">Vai trò</label>
+              <select id="n-role" value={form.role} onChange={set('role')}>
                 <option value="driver">Lái xe</option>
                 <option value="staff">Văn phòng (toàn quyền)</option>
               </select>
             </div>
-            {form.role === 'driver' && (
-              <div className="field">
-                <label htmlFor="a-driver">Tên lái xe</label>
-                <select id="a-driver" value={form.driver} onChange={set('driver')}>
-                  {drivers.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-            )}
           </div>
           {msg && <p className={msg.ok ? 'ok-msg' : 'err'} role="status">{msg.text}</p>}
-          <div><button className="btn btn-primary" disabled={busy}>{busy ? 'Đang lưu...' : 'Lưu phân quyền'}</button></div>
+          <div><button className="btn btn-primary" disabled={busy}>{busy ? 'Đang tạo...' : 'Tạo tài khoản'}</button></div>
         </form>
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
       <div className="table-wrap">
         <table className="fleet-table staff-table">
-          <thead><tr><th>Email</th><th>Vai trò</th><th>Tên lái xe</th><th aria-label="Thao tác"></th></tr></thead>
+          <thead>
+            <tr><th>Họ tên</th><th>Tên đăng nhập</th><th>Vai trò</th><th>Đăng nhập gần nhất</th><th aria-label="Thao tác"></th></tr>
+          </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.user_id}>
-                <td><strong>{r.email}</strong>{r.user_id === me && <span className="muted small"> (bạn)</span>}</td>
-                <td>{roleLabel[r.role]}</td>
-                <td>{r.driver_name}</td>
+                <td><strong>{r.full_name || '—'}</strong>{r.user_id === me && <span className="muted small"> (bạn)</span>}</td>
+                <td>{displayLogin(r.email)}</td>
+                <td>{r.role ? roleLabel[r.role] : <span className="err" style={{ fontSize: '.9rem' }}>Chưa phân quyền</span>}</td>
+                <td className="muted small">{r.last_sign_in_at ? new Date(r.last_sign_in_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'Chưa đăng nhập'}</td>
                 <td className="actions">
-                  {r.user_id !== me && <button className="btn btn-danger sm" onClick={() => revoke(r)}>Thu hồi quyền</button>}
+                  <button className="btn btn-outline sm" onClick={() => {
+                    setEditMsg(null);
+                    setEditing({ user_id: r.user_id, name: r.full_name || '', role: r.role || 'driver', password: '', login: displayLogin(r.email), self: r.user_id === me });
+                  }}>Sửa</button>
+                  {r.user_id !== me && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                 </td>
               </tr>
             ))}
-            {loading && <tr><td colSpan={4} className="muted">Đang tải...</td></tr>}
+            {loading && <tr><td colSpan={5} className="muted">Đang tải...</td></tr>}
+            {!loading && !rows.length && !err && <tr><td colSpan={5} className="muted">Chưa có tài khoản nào.</td></tr>}
           </tbody>
         </table>
       </div>
+
+      {editing && (
+        <Modal title={`Sửa tài khoản: ${editing.login}`} onClose={() => setEditing(null)}>
+          <form className="form" onSubmit={saveEdit} noValidate>
+            <div className="field">
+              <label htmlFor="e-name">Họ tên</label>
+              <input id="e-name" value={editing.name} onChange={(e) => setEditing((s) => ({ ...s, name: e.target.value }))} />
+              {editing.role === 'driver' && <p className="muted small" style={{ margin: 0 }}>Đổi tên lái xe sẽ tự cập nhật các đơn đã giao cho người này.</p>}
+            </div>
+            <div className="field">
+              <label htmlFor="e-role">Vai trò</label>
+              <select id="e-role" value={editing.role} disabled={editing.self} onChange={(e) => setEditing((s) => ({ ...s, role: e.target.value }))}>
+                <option value="driver">Lái xe</option>
+                <option value="staff">Văn phòng (toàn quyền)</option>
+                <option value="none">Thu hồi quyền (không xem được gì)</option>
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="e-pass">Mật khẩu mới <span className="muted small" style={{ color: 'var(--muted)' }}>(để trống nếu không đổi)</span></label>
+              <input id="e-pass" type="text" value={editing.password} autoComplete="new-password"
+                onChange={(e) => setEditing((s) => ({ ...s, password: e.target.value }))} />
+            </div>
+            {editMsg && <p className={editMsg.ok ? 'ok-msg' : 'err'} role="alert">{editMsg.text}</p>}
+            <div className="modal-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setEditing(null)}>Huỷ</button>
+              <button className="btn btn-primary" disabled={busy}>{busy ? 'Đang lưu...' : 'Lưu'}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </>
   );
 }

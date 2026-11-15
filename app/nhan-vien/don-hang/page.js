@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, vnd, orderCode } from '../../../lib/supabase';
-import { drivers } from '../../../lib/site';
+import { drivers as defaultDrivers } from '../../../lib/site';
 import Modal from '../../../components/staff/Modal';
 import DeliveryDocs, { removeDocFiles } from '../../../components/staff/DeliveryDocs';
 
@@ -21,6 +21,7 @@ export default function Page() {
   const [customers, setCustomers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [pickups, setPickups] = useState([]);
+  const [drivers, setDrivers] = useState(defaultDrivers);
   const [pickMsg, setPickMsg] = useState(null); // { ok: bool, text }
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -44,6 +45,12 @@ export default function Page() {
 
   const load = useCallback(async () => {
     loadCounts();
+    // Tài xế = các tài khoản có vai trò Lái xe (cộng thêm danh sách mặc định trong lib/site.js)
+    supabase.from('staff_roles').select('driver_name').eq('role', 'driver').then(({ data, error }) => {
+      if (error || !data) return;
+      const names = data.map((d) => d.driver_name).filter(Boolean);
+      setDrivers([...new Set([...names, ...defaultDrivers])].sort((a, b) => a.localeCompare(b, 'vi')));
+    });
     setLoading(true);
     const [o, c, v, p] = await Promise.all([
       supabase

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { supabase } from '../../lib/supabase';
+import { supabase, LOGIN_DOMAIN, displayLogin } from '../../lib/supabase';
 import Logo from '../Logo';
 import DriverApp from './DriverApp';
 
@@ -17,9 +17,12 @@ function Login() {
     e.preventDefault();
     setErr('');
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    // Cho phép gõ tên đăng nhập (VD "trang") thay cho email
+    const id = email.trim().toLowerCase();
+    const loginEmail = id.includes('@') ? id : `${id}@${LOGIN_DOMAIN}`;
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setBusy(false);
-    if (error) setErr(error.status === 400 || error.status === 401 ? 'Email hoặc mật khẩu không đúng.' : 'Không kết nối được máy chủ. Vui lòng thử lại.');
+    if (error) setErr(error.status === 400 || error.status === 401 ? 'Tên đăng nhập hoặc mật khẩu không đúng.' : 'Không kết nối được máy chủ. Vui lòng thử lại.');
   }
 
   return (
@@ -28,8 +31,9 @@ function Login() {
         <Logo />
         <h1 style={{ fontSize: '1.5rem', marginTop: 14 }}>Đăng nhập nhân viên</h1>
         <div className="field">
-          <label htmlFor="l-email">Email</label>
-          <input id="l-email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <label htmlFor="l-email">Tên đăng nhập</label>
+          <input id="l-email" type="text" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="VD: trang (hoặc email)" />
         </div>
         <div className="field">
           <label htmlFor="l-pass">Mật khẩu</label>
@@ -99,7 +103,7 @@ export default function StaffShell({ children }) {
       <div className="login-wrap">
         <div className="login-card notice">
           <h1 style={{ fontSize: '1.4rem' }}>Tài khoản chưa được phân quyền</h1>
-          <p>Tài khoản <strong>{session.user.email}</strong> chưa được cấp quyền. Vui lòng báo văn phòng phân quyền ở mục Tài khoản.</p>
+          <p>Tài khoản <strong>{displayLogin(session.user.email)}</strong> chưa được cấp quyền. Vui lòng báo văn phòng phân quyền ở mục Tài khoản.</p>
           <button className="btn btn-outline" onClick={() => supabase.auth.signOut()}>Đăng xuất</button>
         </div>
       </div>
@@ -132,7 +136,7 @@ export default function StaffShell({ children }) {
             ))}
           </nav>
           <div className="staff-user">
-            <span className="small">{session.user.email}</span>
+            <span className="small">{displayLogin(session.user.email)}</span>
             <button className="btn btn-ghost" style={{ minHeight: 38, padding: '6px 14px' }} onClick={() => supabase.auth.signOut()}>
               Đăng xuất
             </button>
