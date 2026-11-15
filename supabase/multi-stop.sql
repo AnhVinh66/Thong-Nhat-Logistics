@@ -1,3 +1,5 @@
+-- !!! Nếu đã chạy driver-role.sql: sau khi chạy file này PHẢI chạy lại driver-role.sql,
+-- !!! nếu không lái xe sẽ xem được toàn bộ dữ liệu.
 -- Chạy file này trong Supabase: SQL Editor -> New query -> dán -> Run.
 -- Thêm tính năng "Đơn hàng trả hàng nhiều điểm". Chạy nhiều lần không sao.
 

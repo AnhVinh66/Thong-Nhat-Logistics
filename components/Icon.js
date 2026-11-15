@@ -15,7 +15,9 @@ const paths = {
   menu: <path d="M3 6h18M3 12h18M3 18h18" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   users: <><circle cx="9" cy="8" r="3.500" /><path d="M2 21c0-4 3-6 7-6s7 2 7 6" /><path d="M16 4.500a3.500 3.500 0 010 7M18 15c2.500.6 4 2.500 4 6" /></>,
-  calc: <><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M8 6h8M8 11h2M14 11h2M8 15h2M14 15h2M8 19h2M14 19h2" /></>,
+  camera: <><path d="M3 8.5A2.5 2.5 0 015.5 6h1.8l1.6-2.4h6.2L16.7 6h1.8A2.5 2.5 0 0121 8.5v9a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 17.5z" /><circle cx="12" cy="13" r="3.8" /></>,
+  image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9.5" r="1.8" /><path d="M21 16l-5-5-8 8" /></>,
+  calc:<><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M8 6h8M8 11h2M14 11h2M8 15h2M14 15h2M8 19h2M14 19h2" /></>,
 };
 
 export default function Icon({ name, size = 24, className = '' }) {

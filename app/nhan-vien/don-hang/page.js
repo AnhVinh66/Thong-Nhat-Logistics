@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, vnd, orderCode } from '../../../lib/supabase';
 import { drivers } from '../../../lib/site';
 import Modal from '../../../components/staff/Modal';
+import DeliveryDocs, { removeDocFiles } from '../../../components/staff/DeliveryDocs';
 
 const blankStop = { customer_id: '', address: '', cargo: '', weight: '', fee: '' };
 const blank = {
@@ -27,8 +28,22 @@ export default function Page() {
   const [editing, setEditing] = useState(null);
   const [formErr, setFormErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [photoCounts, setPhotoCounts] = useState({}); // "orderId|stopId" -> số ảnh
+  const [docsFor, setDocsFor] = useState(null); // { orderId, stopId, title }
+
+  const loadCounts = useCallback(async () => {
+    const { data, error } = await supabase.from('delivery_photos').select('order_id, stop_id');
+    if (error) return;
+    const m = {};
+    data.forEach((p) => {
+      const k = `${p.order_id}|${p.stop_id || ''}`;
+      m[k] = (m[k] || 0) + 1;
+    });
+    setPhotoCounts(m);
+  }, []);
 
   const load = useCallback(async () => {
+    loadCounts();
     setLoading(true);
     const [o, c, v, p] = await Promise.all([
       supabase
@@ -53,7 +68,7 @@ export default function Page() {
       setCustomers(c.data);
     }
     setLoading(false);
-  }, []);
+  }, [loadCounts]);
 
   useEffect(() => {
     load();
@@ -75,7 +90,12 @@ export default function Page() {
   const setStop = (i, k) => (e) =>
     setEditing((s) => ({ ...s, stops: s.stops.map((st, j) => (j === i ? { ...st, [k]: e.target.value } : st)) }));
   const addStop = () => setEditing((s) => ({ ...s, stops: [...s.stops, { ...blankStop }] }));
-  const removeStop = (i) => setEditing((s) => ({ ...s, stops: s.stops.filter((_, j) => j !== i) }));
+  const removeStop = (i) => {
+    const st = editing.stops[i];
+    const n = st.id ? photoCounts[`${editing.id}|${st.id}`] || 0 : 0;
+    if (n && !window.confirm(`Điểm trả #${i + 1} đã có ${n} ảnh chứng từ. Khi lưu đơn, các ảnh này sẽ bị xoá. Tiếp tục?`)) return;
+    setEditing((s) => ({ ...s, stops: s.stops.filter((_, j) => j !== i) }));
+  };
 
   async function savePickup() {
     const address = (editing?.pickup || '').trim();
@@ -101,6 +121,7 @@ export default function Page() {
     setPickMsg(null);
     if (!r) return setEditing({ ...blank, stops: [{ ...blankStop }, { ...blankStop }] });
     const stops = sortedStops(r).map((st) => ({
+      id: st.id,
       customer_id: st.customer_id,
       address: st.address,
       cargo: st.cargo || '',
@@ -189,16 +210,31 @@ export default function Page() {
       const up = await supabase.from('orders').update(payload).eq('id', editing.id);
       failed = !!up.error;
     } else {
-      // Thêm điểm mới trước, cập nhật đơn, rồi mới xoá điểm cũ (lỗi giữa chừng không mất dữ liệu cũ)
-      const s = await supabase.from('order_stops').insert(stops.map((st) => ({ ...st, order_id: editing.id }))).select('id');
-      if (s.error) failed = true;
-      else {
-        const up = await supabase.from('orders').update(payload).eq('id', editing.id);
-        if (up.error) {
-          await supabase.from('order_stops').delete().in('id', s.data.map((x) => x.id));
+      // Giữ nguyên mã các điểm trả đã có (để không mất ảnh chứng từ gắn với điểm đó):
+      // cập nhật điểm cũ, thêm điểm mới, cập nhật đơn, cuối cùng mới xoá các điểm đã bỏ.
+      const withIds = stops.map((st, i) => ({ ...st, id: editing.stops[i].id }));
+      for (const { id, ...fields } of withIds.filter((x) => x.id)) {
+        const u = await supabase.from('order_stops').update(fields).eq('id', id);
+        if (u.error) {
           failed = true;
-        } else if (editing.oldStopIds.length) {
-          await supabase.from('order_stops').delete().in('id', editing.oldStopIds);
+          break;
+        }
+      }
+      const fresh = withIds.filter((x) => !x.id).map(({ id, ...f }) => ({ ...f, order_id: editing.id }));
+      if (!failed && fresh.length) {
+        const s = await supabase.from('order_stops').insert(fresh);
+        if (s.error) failed = true;
+      }
+      if (!failed) {
+        const up = await supabase.from('orders').update(payload).eq('id', editing.id);
+        failed = !!up.error;
+      }
+      if (!failed) {
+        const kept = withIds.map((x) => x.id).filter(Boolean);
+        const removed = editing.oldStopIds.filter((id) => !kept.includes(id));
+        if (removed.length) {
+          await removeDocFiles({ stopIds: removed });
+          await supabase.from('order_stops').delete().in('id', removed);
         }
       }
     }
@@ -214,7 +250,8 @@ export default function Page() {
   }
 
   async function remove(r) {
-    if (!window.confirm(`Xoá đơn hàng ${orderCode(r.order_no)}? Thao tác này không thể hoàn tác.`)) return;
+    if (!window.confirm(`Xoá đơn hàng ${orderCode(r.order_no)} và toàn bộ ảnh chứng từ của đơn? Thao tác này không thể hoàn tác.`)) return;
+    await removeDocFiles({ orderId: r.id });
     const { error } = await supabase.from('orders').delete().eq('id', r.id);
     if (error) return window.alert('Không xoá được. Vui lòng thử lại.');
     load();
@@ -297,6 +334,14 @@ export default function Page() {
                     <td>{r.ship_date ? r.ship_date.split('-').reverse().join('/') : ''}</td>
                     <td className="num">{vnd(r.fee)}</td>
                     <td className="actions">
+                      {!isMulti && (
+                        <button
+                          className={`btn sm ${photoCounts[`${r.id}|`] ? 'btn-docs-has' : 'btn-docs'}`}
+                          onClick={() => setDocsFor({ orderId: r.id, stopId: null, title: `Chứng từ giao hàng – ${orderCode(r.order_no)}` })}
+                        >
+                          Chứng từ ({photoCounts[`${r.id}|`] || 0})
+                        </button>
+                      )}
                       <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>
                       <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
                     </td>
@@ -306,8 +351,18 @@ export default function Page() {
                       <td></td>
                       <td colSpan={7}>
                         <ol className="stop-list">
-                          {stops.map((st) => (
+                          {stops.map((st, i) => (
                             <li key={st.id}>
+                              <button
+                                className={`btn sm stop-docs ${photoCounts[`${r.id}|${st.id}`] ? 'btn-docs-has' : 'btn-docs'}`}
+                                onClick={() => setDocsFor({
+                                  orderId: r.id,
+                                  stopId: st.id,
+                                  title: `Chứng từ – ${orderCode(r.order_no)} · Điểm #${i + 1} (${st.customers?.name || ''})`,
+                                })}
+                              >
+                                Chứng từ ({photoCounts[`${r.id}|${st.id}`] || 0})
+                              </button>
                               <strong>{st.customers?.name}</strong>
                               <span className="muted"> ({st.customers?.phone})</span> – {st.address}
                               {(st.cargo || st.weight) && <span className="muted"> · {[st.cargo, st.weight].filter(Boolean).join(', ')}</span>}
@@ -335,6 +390,16 @@ export default function Page() {
           )}
         </table>
       </div>
+
+      {docsFor && (
+        <DeliveryDocs
+          orderId={docsFor.orderId}
+          stopId={docsFor.stopId}
+          title={docsFor.title}
+          onClose={() => setDocsFor(null)}
+          onChanged={loadCounts}
+        />
+      )}
 
       {editing && (
         <Modal title={editing.id ? `Sửa đơn hàng ${orderCode(editing.order_no)}` : 'Thêm đơn hàng'} onClose={() => setEditing(null)}>

@@ -54,6 +54,8 @@ Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km t
 3b. Nếu đã chạy `schema.sql` từ trước và cần thêm bảng **Danh sách xe**: chạy riêng file `supabase/vehicles.sql` trong SQL Editor (đã kèm 3 xe mẫu).
 3c. Để dùng **đơn hàng trả hàng nhiều điểm**, chạy thêm file `supabase/multi-stop.sql` (nếu dựng mới bằng `schema.sql` bản hiện tại thì đã có sẵn).
 3d. Để lưu và gợi ý **điểm lấy hàng**, chạy thêm file `supabase/pickup-points.sql` (đã có trong `schema.sql` bản hiện tại).
+3e. Để tải **ảnh biên bản giao nhận và bill** cho từng điểm giao, chạy thêm file `supabase/delivery-photos.sql` (tạo kho ảnh riêng tư `delivery-docs`; đã có trong `schema.sql` bản hiện tại).
+3f. **Vai trò Lái xe**: chạy `supabase/driver-role.sql` (chạy SAU tất cả các file trên). Từ đây phân quyền ở **Nhân viên → Tài khoản**: lái xe chỉ thấy chuyến của mình và chụp ảnh chứng từ. Nếu sau này chạy lại bất kỳ file SQL nào khác, phải chạy lại `driver-role.sql`.
 4. **Authentication → Users → Add user** để tạo tài khoản cho từng nhân viên (email + mật khẩu). Mọi nhân viên có quyền như nhau.
 5. **Project Settings → API**: copy *Project URL* và *anon public key* vào `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` khi chạy thử, GitHub *Variables* khi deploy).
 

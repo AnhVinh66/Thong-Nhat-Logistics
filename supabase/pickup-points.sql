@@ -1,3 +1,5 @@
+-- !!! Nếu đã chạy driver-role.sql: sau khi chạy file này PHẢI chạy lại driver-role.sql,
+-- !!! nếu không lái xe sẽ xem được toàn bộ dữ liệu.
 -- Chạy file này trong Supabase: SQL Editor -> New query -> dán -> Run.
 -- Lưu các điểm lấy hàng để gợi ý khi tạo đơn hàng mới. Chạy nhiều lần không sao.
 
