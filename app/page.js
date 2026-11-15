@@ -16,7 +16,7 @@ export default function Home() {
               Hàng đến <em>đúng hẹn</em>,<br />an toàn trên mọi nẻo đường
             </h1>
             <p className="lead">
-              {site.name} cung cấp dịch vụ vận chuyển hàng hoá nội địa bằng xe tải từ 1,5 đến 15 tấn.
+              {site.name} cung cấp dịch vụ vận chuyển hàng hoá nội địa bằng xe tải từ 1,5 đến 7 tấn.
               Báo giá nhanh, lộ trình rõ ràng, điều phối hỗ trợ 24/7.
             </p>
             <div className="hero-cta">

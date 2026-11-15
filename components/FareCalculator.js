@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { fleet, cities, kmFromHanoi, branchOffAxis, cargoTypes } from '../lib/site';
+import { fleet, cities, kmFromHanoi, branchOffAxis, distanceBands } from '../lib/site';
 
 function distance(a, b) {
   if (a === b) return 0;
@@ -19,20 +19,18 @@ const money = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n / 1000) 
 export default function FareCalculator() {
   const [from, setFrom] = useState('Hà Nội');
   const [to, setTo] = useState('Đà Nẵng');
-  const [truck, setTruck] = useState('t5');
-  const [cargo, setCargo] = useState('normal');
+  const [truck, setTruck] = useState('t7');
   const [manualKm, setManualKm] = useState('');
 
   const result = useMemo(() => {
     const km = manualKm ? Number(manualKm) : distance(from, to);
     if (!km || km <= 0) return null;
     const t = fleet.find((x) => x.id === truck);
-    const c = cargoTypes.find((x) => x.id === cargo);
-    // Đường dài giảm đơn giá dần: > 500 km giảm 10%, > 1000 km giảm 15%
-    const discount = km > 1000 ? 0.85 : km > 500 ? 0.9 : 1;
-    const base = Math.max(t.min, km * t.rate * discount) * c.factor;
-    return { km, t, base, low: base * 0.92, high: base * 1.12 };
-  }, [from, to, truck, cargo, manualKm]);
+    const i = distanceBands.findIndex((max) => km <= max);
+    const price = i >= 0 ? t.tiers[i] : km * t.perKm;
+    const note = i >= 0 ? `Mốc ${i === 0 ? 0 : distanceBands[i - 1]}–${distanceBands[i]} km` : `${money(t.perKm)}/km × ${km.toLocaleString("vi-VN")} km`;
+    return { km, t, price, note };
+  }, [from, to, truck, manualKm]);
 
   return (
     <div className="calc">
@@ -58,15 +56,9 @@ export default function FareCalculator() {
               {fleet.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
-          <div className="field">
-            <label htmlFor="c-cargo">Loại hàng</label>
-            <select id="c-cargo" value={cargo} onChange={(e) => setCargo(e.target.value)}>
-              {cargoTypes.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-          </div>
         </div>
         <div className="field">
-          <label htmlFor="c-km">Hoặc nhập số km thực tế (không bắt buộc)</label>
+          <label htmlFor="c-km">Hoặc nhập số km thực tế (dùng cho quãng đường ngắn / nội thành)</label>
           <input id="c-km" type="number" min="1" inputMode="numeric" value={manualKm} onChange={(e) => setManualKm(e.target.value)} placeholder="Ví dụ: 350" />
         </div>
       </div>
@@ -75,11 +67,11 @@ export default function FareCalculator() {
         {result ? (
           <>
             <p className="eyebrow">Cước tham khảo (một chiều)</p>
-            <p className="calc-price">{money(result.low)} – {money(result.high)}</p>
+            <p className="calc-price">{money(result.price)}</p>
             <ul className="calc-meta">
               <li>Quãng đường ước tính: <strong>{result.km.toLocaleString('vi-VN')} km</strong></li>
               <li>Loại xe: <strong>{result.t.name}</strong> ({result.t.size})</li>
-              <li>Cước tối thiểu của xe: {money(result.t.min)}</li>
+              <li>Cách tính: <strong>{result.note}</strong></li>
             </ul>
             <p className="small">
               Đây là mức giá ước tính để bạn tham khảo, chưa gồm phí bốc xếp, cầu đường đặc biệt, VAT và

@@ -13,12 +13,11 @@ Một lô hàng có thể nhẹ nhưng chiếm nhiều thể tích (xốp, đồ
 |---|---|---|
 | Xe 1,5 tấn | Đến 1,5 tấn | Hàng nhẹ, giao nội thành |
 | Xe 3,5 tấn | Đến 3,5 tấn | Hàng thương mại, nội thất |
-| Xe 5 tấn | Đến 5 tấn | Hàng pallet, vật tư |
-| Xe 8–15 tấn | 8–15 tấn | Hàng nặng, đường dài |
+| Xe 7 tấn | Đến 7 tấn | Hàng pallet, vật tư, đường dài |
 
 ## Dựa vào quãng đường
 
-Với tuyến dài, xe tải lớn thường cho chi phí trên mỗi tấn hàng thấp hơn. Với tuyến ngắn hoặc đường nhỏ, xe nhỏ linh hoạt hơn.
+Với tuyến dài, xe tải tải trọng lớn thường cho chi phí trên mỗi tấn hàng thấp hơn. Với tuyến ngắn hoặc đường nhỏ, xe nhỏ linh hoạt hơn.
 
 ## Ghép hàng hay thuê nguyên chuyến?
 
