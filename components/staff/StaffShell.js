@@ -76,6 +76,7 @@ export default function StaffShell({ children }) {
     { href: '/nhan-vien/', label: 'Tổng quan' },
     { href: '/nhan-vien/khach-hang/', label: 'Khách hàng' },
     { href: '/nhan-vien/don-hang/', label: 'Đơn hàng' },
+    { href: '/nhan-vien/xe/', label: 'Danh sách xe' },
   ];
   const active = (h) => (h === '/nhan-vien/' ? pathname.replace(/\/$/, '') === '/nhan-vien' : pathname.startsWith(h));
 

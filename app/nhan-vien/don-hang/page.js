@@ -2,30 +2,32 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, vnd, orderCode } from '../../../lib/supabase';
-import { fleet } from '../../../lib/site';
+import { drivers } from '../../../lib/site';
 import Modal from '../../../components/staff/Modal';
 
 const blank = {
-  customer_id: '', pickup: '', delivery: '', cargo: '', weight: '', truck: '', plate: '', driver: '', ship_date: '', fee: '', paid: '',
+  customer_id: '', pickup: '', delivery: '', cargo: '', weight: '', plate: '', driver: '', ship_date: '', fee: '',
 };
 
 export default function Page() {
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [q, setQ] = useState('');
-  const [debtOnly, setDebtOnly] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formErr, setFormErr] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [o, c] = await Promise.all([
+    const [o, c, v] = await Promise.all([
       supabase.from('orders').select('*, customers(name, phone)').order('created_at', { ascending: false }),
       supabase.from('customers').select('id, name, phone').order('name'),
+      supabase.from('vehicles').select('plate, payload_tons, volume_cbm').order('plate'),
     ]);
+    if (!v.error) setVehicles(v.data);
     if (o.error || c.error) setErr('Không tải được dữ liệu đơn hàng.');
     else {
       setErr('');
@@ -43,19 +45,16 @@ export default function Page() {
     const s = q.trim().toLowerCase();
     return rows.filter(
       (r) =>
-        (!debtOnly || Number(r.debt) > 0) &&
         (!s ||
           [orderCode(r.order_no), r.customers?.name, r.pickup, r.delivery, r.cargo, r.plate, r.driver].some((v) =>
             (v || '').toLowerCase().includes(s)
           ))
     );
-  }, [rows, q, debtOnly]);
+  }, [rows, q]);
 
   const totals = useMemo(
     () => ({
       fee: shown.reduce((a, r) => a + Number(r.fee), 0),
-      paid: shown.reduce((a, r) => a + Number(r.paid), 0),
-      debt: shown.reduce((a, r) => a + Number(r.debt), 0),
     }),
     [shown]
   );
@@ -66,21 +65,20 @@ export default function Page() {
     if (!editing.customer_id) return setFormErr('Vui lòng chọn khách hàng.');
     if (!editing.pickup.trim() || !editing.delivery.trim()) return setFormErr('Vui lòng nhập điểm đi và điểm đến.');
     const fee = Number(editing.fee || 0);
-    const paid = Number(editing.paid || 0);
-    if (fee < 0 || paid < 0 || Number.isNaN(fee) || Number.isNaN(paid)) return setFormErr('Cước phí và số tiền đã thanh toán phải là số không âm.');
+    if (fee < 0 || Number.isNaN(fee)) return setFormErr('Cước phí phải là số không âm.');
     setBusy(true);
+    const veh = vehicles.find((x) => x.plate === editing.plate);
     const payload = {
       customer_id: editing.customer_id,
       pickup: editing.pickup.trim(),
       delivery: editing.delivery.trim(),
       cargo: editing.cargo?.trim() || null,
       weight: editing.weight?.trim() || null,
-      truck: editing.truck || null,
-      plate: editing.plate?.trim() || null,
+      truck: veh ? `Xe ${Number(veh.payload_tons)} tấn` : editing.truck || null,
+      plate: editing.plate || null,
       driver: editing.driver?.trim() || null,
       ship_date: editing.ship_date || null,
       fee,
-      paid,
     };
     const { error } = editing.id
       ? await supabase.from('orders').update(payload).eq('id', editing.id)
@@ -99,7 +97,6 @@ export default function Page() {
   }
 
   const set = (k) => (e) => setEditing((s) => ({ ...s, [k]: e.target.value }));
-  const liveDebt = editing ? Number(editing.fee || 0) - Number(editing.paid || 0) : 0;
 
   return (
     <>
@@ -118,9 +115,6 @@ export default function Page() {
 
       <div className="toolbar">
         <input aria-label="Tìm kiếm" placeholder="Tìm theo mã đơn, khách, tuyến, biển số, tài xế..." value={q} onChange={(e) => setQ(e.target.value)} />
-        <label className="check-inline">
-          <input type="checkbox" checked={debtOnly} onChange={(e) => setDebtOnly(e.target.checked)} /> Chỉ đơn còn công nợ
-        </label>
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
@@ -129,7 +123,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Mã</th><th>Khách hàng</th><th>Tuyến</th><th>Hàng</th><th>Xe / Tài xế</th><th>Ngày</th>
-              <th className="num">Cước</th><th className="num">Đã thu</th><th className="num">Công nợ</th><th aria-label="Thao tác"></th>
+              <th className="num">Cước</th><th aria-label="Thao tác"></th>
             </tr>
           </thead>
           <tbody>
@@ -142,24 +136,20 @@ export default function Page() {
                 <td>{r.truck}{(r.plate || r.driver) && <div className="muted small">{[r.plate, r.driver].filter(Boolean).join(' · ')}</div>}</td>
                 <td>{r.ship_date ? r.ship_date.split('-').reverse().join('/') : ''}</td>
                 <td className="num">{vnd(r.fee)}</td>
-                <td className="num">{vnd(r.paid)}</td>
-                <td className="num" style={{ color: Number(r.debt) > 0 ? 'var(--err)' : 'var(--ok)', fontWeight: 700 }}>{vnd(r.debt)}</td>
                 <td className="actions">
-                  <button className="btn btn-outline sm" onClick={() => { setFormErr(''); setEditing({ ...blank, ...r, fee: String(r.fee), paid: String(r.paid), ship_date: r.ship_date || '' }); }}>Sửa</button>
+                  <button className="btn btn-outline sm" onClick={() => { setFormErr(''); setEditing({ ...blank, ...r, fee: String(r.fee), ship_date: r.ship_date || '' }); }}>Sửa</button>
                   <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
                 </td>
               </tr>
             ))}
-            {!loading && !shown.length && <tr><td colSpan={10} className="muted">Chưa có đơn hàng nào.</td></tr>}
-            {loading && <tr><td colSpan={10} className="muted">Đang tải...</td></tr>}
+            {!loading && !shown.length && <tr><td colSpan={8} className="muted">Chưa có đơn hàng nào.</td></tr>}
+            {loading && <tr><td colSpan={8} className="muted">Đang tải...</td></tr>}
           </tbody>
           {shown.length > 0 && (
             <tfoot>
               <tr>
                 <td colSpan={6}><strong>Tổng ({shown.length} đơn)</strong></td>
                 <td className="num"><strong>{vnd(totals.fee)}</strong></td>
-                <td className="num"><strong>{vnd(totals.paid)}</strong></td>
-                <td className="num"><strong>{vnd(totals.debt)}</strong></td>
                 <td></td>
               </tr>
             </tfoot>
@@ -187,23 +177,30 @@ export default function Page() {
             </div>
             <div className="grid-2">
               <div className="field">
-                <label htmlFor="o-truck">Loại xe</label>
-                <select id="o-truck" value={editing.truck || ''} onChange={set('truck')}>
+                <label htmlFor="o-plate">Xe (biển số – tải trọng)</label>
+                <select id="o-plate" value={editing.plate || ''} onChange={set('plate')}>
                   <option value="">Chưa chọn</option>
-                  {fleet.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+                  {editing.plate && !vehicles.some((x) => x.plate === editing.plate) && <option value={editing.plate}>{editing.plate}</option>}
+                  {vehicles.map((x) => (
+                    <option key={x.plate} value={x.plate}>
+                      {x.plate}{x.payload_tons != null ? ` – ${Number(x.payload_tons)} tấn` : ''}{x.volume_cbm != null ? ` (${Number(x.volume_cbm)} CBM)` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
+              <div className="field">
+                <label htmlFor="o-driver">Tài xế</label>
+                <select id="o-driver" value={editing.driver || ''} onChange={set('driver')}>
+                  <option value="">Chưa chọn</option>
+                  {editing.driver && !drivers.includes(editing.driver) && <option value={editing.driver}>{editing.driver}</option>}
+                  {drivers.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid-2">
               <div className="field"><label htmlFor="o-date">Ngày vận chuyển</label><input id="o-date" type="date" value={editing.ship_date || ''} onChange={set('ship_date')} /></div>
-            </div>
-            <div className="grid-2">
-              <div className="field"><label htmlFor="o-plate">Biển số xe</label><input id="o-plate" value={editing.plate || ''} onChange={set('plate')} /></div>
-              <div className="field"><label htmlFor="o-driver">Tài xế</label><input id="o-driver" value={editing.driver || ''} onChange={set('driver')} /></div>
-            </div>
-            <div className="grid-2">
               <div className="field"><label htmlFor="o-fee">Cước phí (đồng)</label><input id="o-fee" type="number" min="0" inputMode="numeric" value={editing.fee} onChange={set('fee')} /></div>
-              <div className="field"><label htmlFor="o-paid">Đã thanh toán (đồng)</label><input id="o-paid" type="number" min="0" inputMode="numeric" value={editing.paid} onChange={set('paid')} /></div>
             </div>
-            <p style={{ margin: 0 }}>Công nợ: <strong style={{ color: liveDebt > 0 ? 'var(--err)' : 'var(--ok)' }}>{vnd(liveDebt)}</strong></p>
             {formErr && <p className="err" role="alert">{formErr}</p>}
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setEditing(null)}>Huỷ</button>

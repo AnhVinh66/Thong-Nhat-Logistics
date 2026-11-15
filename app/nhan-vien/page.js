@@ -10,11 +10,12 @@ export default function Page() {
 
   useEffect(() => {
     (async () => {
-      const [c, o] = await Promise.all([
+      const [c, o, v] = await Promise.all([
         supabase.from('customers').select('id', { count: 'exact', head: true }),
-        supabase.from('orders').select('fee, paid, debt'),
+        supabase.from('orders').select('fee'),
+        supabase.from('vehicles').select('id', { count: 'exact', head: true }),
       ]);
-      if (c.error || o.error) {
+      if (c.error || o.error || v.error) {
         setErr('Không tải được dữ liệu. Kiểm tra đã chạy supabase/schema.sql chưa.');
         return;
       }
@@ -23,8 +24,7 @@ export default function Page() {
         customers: c.count || 0,
         orders: rows.length,
         fee: rows.reduce((a, r) => a + Number(r.fee), 0),
-        paid: rows.reduce((a, r) => a + Number(r.paid), 0),
-        debt: rows.reduce((a, r) => a + Number(r.debt), 0),
+        vehicles: v.count || 0,
       });
     })();
   }, []);
@@ -38,7 +38,7 @@ export default function Page() {
           ['Khách hàng', s?.customers],
           ['Đơn hàng', s?.orders],
           ['Tổng cước', s && vnd(s.fee)],
-          ['Công nợ còn lại', s && vnd(s.debt)],
+          ['Xe', s?.vehicles],
         ].map(([label, val]) => (
           <div className="card" key={label}>
             <p className="muted small" style={{ margin: 0 }}>{label}</p>
