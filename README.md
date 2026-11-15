@@ -44,6 +44,18 @@ Trang **Tính cước** cho khách chọn Tỉnh/Thành, Phường/Xã và nhậ
 
 Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km thủ công.
 
+## Khu vực nhân viên (đăng nhập, Khách hàng, Đơn hàng)
+
+Địa chỉ: `/nhan-vien/` (link nhỏ "Nhân viên" ở chân trang, không index trên Google). Dữ liệu và đăng nhập dùng **Supabase**.
+
+1. Tạo dự án tại https://supabase.com (gói miễn phí).
+2. **SQL Editor → New query**: dán toàn bộ `supabase/schema.sql` rồi Run (tạo bảng `customers`, `orders` và bật Row Level Security: chỉ người đã đăng nhập mới truy cập được).
+3. **Authentication → Sign In / Providers → tắt "Allow new users to sign up"** (bắt buộc, nếu không ai cũng tự đăng ký được và xem dữ liệu).
+4. **Authentication → Users → Add user** để tạo tài khoản cho từng nhân viên (email + mật khẩu). Mọi nhân viên có quyền như nhau.
+5. **Project Settings → API**: copy *Project URL* và *anon public key* vào `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` khi chạy thử, GitHub *Variables* khi deploy).
+
+Lưu ý: anon key là khoá công khai theo thiết kế của Supabase, an toàn nhờ bước 2 và 3. **Không** dùng `service_role` key trong dự án này. Nên bật sao lưu dữ liệu trong Supabase khi dùng thật.
+
 ## Đẩy lên GitHub
 
 ```bash
@@ -60,7 +72,7 @@ git push -u origin main
 1. Trong hPanel Hostinger: **Websites → Files → FTP Accounts**, lấy `host`, `username`, đặt/ghi nhớ `password`.
 2. Trên GitHub: **Settings → Secrets and variables → Actions**
    - *Secrets:* `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR` (thường là `/public_html/`)
-   - *Variables:* `NEXT_PUBLIC_SITE_URL` (ví dụ `https://tenmien.vn`), `NEXT_PUBLIC_FORMSPREE_ID`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+   - *Variables:* `NEXT_PUBLIC_SITE_URL` (ví dụ `https://tenmien.vn`), `NEXT_PUBLIC_FORMSPREE_ID`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 3. Mỗi lần push lên nhánh `main`, workflow `.github/workflows/deploy.yml` sẽ build và upload thư mục `out/`.
 
 **Deploy thủ công:** chạy `npm run build`, rồi upload toàn bộ nội dung thư mục `out/` vào `public_html` bằng File Manager.

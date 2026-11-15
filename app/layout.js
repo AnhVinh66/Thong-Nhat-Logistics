@@ -2,6 +2,7 @@ import { Be_Vietnam_Pro } from 'next/font/google';
 import './globals.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import PublicOnly from '../components/PublicOnly';
 import { site } from '../lib/site';
 
 const font = Be_Vietnam_Pro({
@@ -44,9 +45,9 @@ export default function RootLayout({ children }) {
     <html lang="vi">
       <body className={font.className}>
         <a href="#main" className="skip">Bỏ qua đến nội dung chính</a>
-        <Header />
+        <PublicOnly><Header /></PublicOnly>
         <main id="main">{children}</main>
-        <Footer />
+        <PublicOnly><Footer /></PublicOnly>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </body>
     </html>

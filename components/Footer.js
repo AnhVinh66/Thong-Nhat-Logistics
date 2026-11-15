@@ -56,7 +56,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="container footer-bottom">
-          © {new Date().getFullYear()} {site.name}. Thành lập năm {site.founded}. Bảo lưu mọi quyền.
+          © {new Date().getFullYear()} {site.name}. Thành lập năm {site.founded}. Bảo lưu mọi quyền. · <Link href="/nhan-vien/">Nhân viên</Link>
         </div>
       </footer>
 
