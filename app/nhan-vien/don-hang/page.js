@@ -19,6 +19,8 @@ export default function Page() {
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [pickups, setPickups] = useState([]);
+  const [pickMsg, setPickMsg] = useState(null); // { ok: bool, text }
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [q, setQ] = useState('');
@@ -28,15 +30,17 @@ export default function Page() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [o, c, v] = await Promise.all([
+    const [o, c, v, p] = await Promise.all([
       supabase
         .from('orders')
         .select('*, customers(name, phone), order_stops(*, customers(name, phone))')
         .order('created_at', { ascending: false }),
       supabase.from('customers').select('id, name, phone').order('name'),
       supabase.from('vehicles').select('plate, payload_tons, volume_cbm').order('plate'),
+      supabase.from('pickup_points').select('address').order('address'),
     ]);
     if (!v.error) setVehicles(v.data);
+    if (!p.error) setPickups(p.data.map((x) => x.address));
     if (o.error || c.error) {
       setErr(
         o.error?.message?.includes('order_stops') || o.error?.code === 'PGRST200'
@@ -73,8 +77,28 @@ export default function Page() {
   const addStop = () => setEditing((s) => ({ ...s, stops: [...s.stops, { ...blankStop }] }));
   const removeStop = (i) => setEditing((s) => ({ ...s, stops: s.stops.filter((_, j) => j !== i) }));
 
+  async function savePickup() {
+    const address = (editing?.pickup || '').trim();
+    if (!address) return setPickMsg({ ok: false, text: 'Nhập điểm lấy hàng trước khi lưu.' });
+    if (pickups.some((x) => x.toLowerCase() === address.toLowerCase())) {
+      return setPickMsg({ ok: true, text: 'Điểm lấy hàng này đã có trong danh sách.' });
+    }
+    const { error } = await supabase.from('pickup_points').insert({ address });
+    if (error) {
+      return setPickMsg({
+        ok: false,
+        text: error.code === '23505'
+          ? 'Điểm lấy hàng này đã có trong danh sách.'
+          : 'Không lưu được. Hãy chạy supabase/pickup-points.sql trên Supabase rồi thử lại.',
+      });
+    }
+    setPickups((s) => [...s, address].sort((a, b) => a.localeCompare(b, 'vi')));
+    setPickMsg({ ok: true, text: 'Đã lưu điểm lấy hàng.' });
+  }
+
   function openEdit(r) {
     setFormErr('');
+    setPickMsg(null);
     if (!r) return setEditing({ ...blank, stops: [{ ...blankStop }, { ...blankStop }] });
     const stops = sortedStops(r).map((st) => ({
       customer_id: st.customer_id,
@@ -106,7 +130,7 @@ export default function Page() {
     e.preventDefault();
     setFormErr('');
     const multi = editing.order_type === 'multi';
-    if (!editing.pickup.trim()) return setFormErr('Vui lòng nhập điểm đi.');
+    if (!editing.pickup.trim()) return setFormErr('Vui lòng nhập điểm lấy hàng.');
 
     let stops = [];
     let fee = 0;
@@ -198,6 +222,25 @@ export default function Page() {
 
   const multi = editing?.order_type === 'multi';
   const liveTotal = editing && multi ? editing.stops.reduce((a, st) => a + Number(st.fee || 0), 0) : 0;
+  const pickupField = (label) => (
+    <div className="field">
+      <label htmlFor="o-from">{label}</label>
+      <div className="input-plus">
+        <input
+          id="o-from"
+          list="pickup-list"
+          value={editing.pickup}
+          onChange={(e) => { setPickMsg(null); setField('pickup')(e); }}
+          placeholder={pickups.length ? 'Chọn điểm đã lưu hoặc nhập mới' : 'Nhập địa chỉ lấy hàng'}
+          autoComplete="off"
+        />
+        <button type="button" className="btn btn-outline plus-btn" onClick={savePickup} aria-label="Lưu điểm lấy hàng này" title="Lưu điểm lấy hàng này">+</button>
+      </div>
+      <datalist id="pickup-list">{pickups.map((x) => <option key={x} value={x} />)}</datalist>
+      {pickMsg && <p className={pickMsg.ok ? 'ok-msg' : 'err'} role="status">{pickMsg.text}</p>}
+    </div>
+  );
+
   const customerOptions = (
     <>
       <option value="">Chọn khách hàng</option>
@@ -326,10 +369,10 @@ export default function Page() {
             )}
 
             {multi ? (
-              <div className="field"><label htmlFor="o-from">Điểm đi (chung cho cả đơn) *</label><input id="o-from" value={editing.pickup} onChange={setField('pickup')} /></div>
+              pickupField('Điểm lấy hàng (chung cho cả đơn) *')
             ) : (
               <div className="grid-2">
-                <div className="field"><label htmlFor="o-from">Điểm đi *</label><input id="o-from" value={editing.pickup} onChange={setField('pickup')} /></div>
+                {pickupField('Điểm lấy hàng *')}
                 <div className="field"><label htmlFor="o-to">Điểm đến *</label><input id="o-to" value={editing.delivery} onChange={setField('delivery')} /></div>
               </div>
             )}

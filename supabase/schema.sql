@@ -106,3 +106,17 @@ alter table public.order_stops enable row level security;
 drop policy if exists "staff full access" on public.order_stops;
 create policy "staff full access" on public.order_stops
   for all to authenticated using (true) with check (true);
+
+-- ===== Điểm lấy hàng đã lưu =====
+
+create table if not exists public.pickup_points (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  address text not null unique
+);
+
+alter table public.pickup_points enable row level security;
+
+drop policy if exists "staff full access" on public.pickup_points;
+create policy "staff full access" on public.pickup_points
+  for all to authenticated using (true) with check (true);
