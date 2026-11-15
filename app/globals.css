@@ -223,3 +223,9 @@ input[aria-invalid="true"] { border-color: var(--err); }
 /* Hero truck animation */
 @keyframes road { to { stroke-dashoffset: -60; } }
 .road-dash { animation: road 1.2s linear infinite; }
+
+/* Địa chỉ tính cước */
+.addr { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 18px 6px; margin: 0; display: grid; gap: 14px; background: var(--soft); }
+.addr legend { font-weight: 800; color: var(--navy); padding: 0 8px; }
+.manual { border: 1px dashed #b8c4d8; border-radius: 10px; padding: 12px 14px; }
+.manual summary { cursor: pointer; font-weight: 600; color: var(--navy); min-height: 24px; }

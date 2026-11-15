@@ -33,6 +33,17 @@ npm run build      # tạo thư mục out/ (file tĩnh để upload)
 2. Lấy ID (đoạn sau `/f/` trong URL form) đặt vào biến `NEXT_PUBLIC_FORMSPREE_ID`.
 3. Khi chưa có ID, form sẽ mở ứng dụng email có sẵn nội dung.
 
+## Tính km tự động (Google Maps)
+
+Trang **Tính cước** cho khách chọn Tỉnh/Thành, Phường/Xã và nhập địa chỉ cụ thể (danh sách hành chính mới nằm ở `public/data/vn-admin.json`). Bấm **Xác nhận địa chỉ** để tìm vị trí và tính quãng đường lái xe bằng Google Maps, rồi ra cước theo bảng giá.
+
+1. Vào https://console.cloud.google.com, tạo dự án và **bật thanh toán** (Google có hạn mức miễn phí hằng tháng).
+2. Bật 3 API: **Maps JavaScript API**, **Geocoding API**, **Routes API**.
+3. Tạo API key. **Bắt buộc hạn chế khoá**: *Application restrictions → Websites* chỉ cho tên miền của bạn (và `localhost` khi chạy thử); *API restrictions* chỉ 3 API trên. Khoá nằm trong mã web nên ai cũng xem được, hạn chế khoá để tránh bị dùng trộm.
+4. Đặt khoá vào biến `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (file `.env.local` khi chạy thử, GitHub *Variables* khi deploy).
+
+Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km thủ công.
+
 ## Đẩy lên GitHub
 
 ```bash
@@ -49,7 +60,7 @@ git push -u origin main
 1. Trong hPanel Hostinger: **Websites → Files → FTP Accounts**, lấy `host`, `username`, đặt/ghi nhớ `password`.
 2. Trên GitHub: **Settings → Secrets and variables → Actions**
    - *Secrets:* `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR` (thường là `/public_html/`)
-   - *Variables:* `NEXT_PUBLIC_SITE_URL` (ví dụ `https://tenmien.vn`), `NEXT_PUBLIC_FORMSPREE_ID`
+   - *Variables:* `NEXT_PUBLIC_SITE_URL` (ví dụ `https://tenmien.vn`), `NEXT_PUBLIC_FORMSPREE_ID`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
 3. Mỗi lần push lên nhánh `main`, workflow `.github/workflows/deploy.yml` sẽ build và upload thư mục `out/`.
 
 **Deploy thủ công:** chạy `npm run build`, rồi upload toàn bộ nội dung thư mục `out/` vào `public_html` bằng File Manager.

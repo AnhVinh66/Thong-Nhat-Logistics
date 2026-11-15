@@ -111,13 +111,14 @@ export default function Home() {
           <div className="table-wrap">
             <table className="fleet-table">
               <thead>
-                <tr><th>Loại xe</th><th>Tải trọng</th><th>Kích thước thùng</th><th>Phù hợp với</th></tr>
+                <tr><th>Loại xe</th><th>Tải trọng</th><th>Khối lượng</th><th>Kích thước thùng</th><th>Phù hợp với</th></tr>
               </thead>
               <tbody>
                 {fleet.map((f) => (
                   <tr key={f.id}>
                     <td><strong>{f.name}</strong></td>
                     <td>{f.load}</td>
+                    <td>{f.volume}</td>
                     <td>{f.size}</td>
                     <td>{f.use}</td>
                   </tr>

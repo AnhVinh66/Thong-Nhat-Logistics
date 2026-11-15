@@ -32,10 +32,10 @@ export default function Page() {
             <h2>Chọn đúng xe, tối ưu chi phí</h2>
             <div className="table-wrap">
               <table className="fleet-table">
-                <thead><tr><th>Loại xe</th><th>Tải trọng</th><th>Thùng xe</th></tr></thead>
+                <thead><tr><th>Loại xe</th><th>Tải trọng</th><th>Khối lượng</th><th>Thùng xe</th></tr></thead>
                 <tbody>
                   {fleet.map((f) => (
-                    <tr key={f.id}><td><strong>{f.name}</strong></td><td>{f.load}</td><td>{f.size}</td></tr>
+                    <tr key={f.id}><td><strong>{f.name}</strong></td><td>{f.load}</td><td>{f.volume}</td><td>{f.size}</td></tr>
                   ))}
                 </tbody>
               </table>

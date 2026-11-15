@@ -9,11 +9,11 @@ excerpt: Chọn xe quá nhỏ thì không chở hết, chọn xe quá lớn thì
 
 Một lô hàng có thể nhẹ nhưng chiếm nhiều thể tích (xốp, đồ nhựa) hoặc nặng nhưng nhỏ gọn (thép, vật liệu). Cần tính cả hai yếu tố.
 
-| Loại xe | Tải trọng | Phù hợp với |
-|---|---|---|
-| Xe 1,5 tấn | Đến 1,5 tấn | Hàng nhẹ, giao nội thành |
-| Xe 3,5 tấn | Đến 3,5 tấn | Hàng thương mại, nội thất |
-| Xe 7 tấn | Đến 7 tấn | Hàng pallet, vật tư, đường dài |
+| Loại xe | Tải trọng | Khối lượng | Phù hợp với |
+|---|---|---|---|
+| Xe 1,5 tấn | Đến 1,5 tấn | 6 khối | Hàng nhẹ, giao nội thành |
+| Xe 3,5 tấn | Đến 3,5 tấn | 14 khối | Hàng thương mại, nội thất |
+| Xe 7 tấn | Đến 7 tấn | 25 khối | Hàng pallet, vật tư, đường dài |
 
 ## Dựa vào quãng đường
 
