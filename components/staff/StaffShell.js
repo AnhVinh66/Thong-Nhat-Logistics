@@ -132,7 +132,13 @@ const sections = [
     links: [
       { href: '/nhan-vien/', label: 'Tổng quan', icon: 'grid' },
       { href: '/nhan-vien/don-hang/', label: 'Đơn hàng', icon: 'route' },
+    ],
+  },
+  {
+    title: 'Tài chính',
+    links: [
       { href: '/nhan-vien/thu-tien/', label: 'Thu tiền', icon: 'money' },
+      { href: '/nhan-vien/ngan-hang/', label: 'Giao dịch ngân hàng', icon: 'bank' },
     ],
   },
   {

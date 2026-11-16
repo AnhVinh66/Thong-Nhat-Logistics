@@ -58,6 +58,7 @@ Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km t
 3f. **Vai trò Lái xe**: chạy `supabase/driver-role.sql` (chạy SAU tất cả các file trên). Từ đây phân quyền ở **Nhân viên → Tài khoản**: lái xe chỉ thấy chuyến của mình và chụp ảnh chứng từ. Nếu sau này chạy lại bất kỳ file SQL nào khác, phải chạy lại `driver-role.sql`.
 3g. **Tạo tài khoản ngay trên website**: chạy `supabase/simple-users.sql` (sau `driver-role.sql`). Từ đó vào **Nhân viên → Tài khoản** nhập Họ tên, Tên đăng nhập, Mật khẩu, Vai trò là xong; không cần email. Đăng nhập bằng tên đăng nhập (VD `trang`).
 3h. **Thu tiền** (nút Đề xuất Thu, bảng Thu, mã khách hàng KH0001...): chạy `supabase/collections.sql` (đã có trong `schema.sql` bản hiện tại). File này tự nhận vai trò nếu đã chạy `driver-role.sql`.
+3i. **Giao dịch ngân hàng** (thêm tài khoản, tải sao kê .xlsx/.csv, chống trùng, mã Hash): chạy `supabase/bank.sql` (đã có trong `schema.sql` bản hiện tại). File này tự nhận vai trò nếu đã chạy `driver-role.sql`.
 4. **Authentication → Users → Add user** để tạo tài khoản cho từng nhân viên (email + mật khẩu). Mọi nhân viên có quyền như nhau.
 5. **Project Settings → API**: copy *Project URL* và *anon public key* vào `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` khi chạy thử, GitHub *Variables* khi deploy).
 
