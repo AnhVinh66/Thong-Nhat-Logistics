@@ -727,3 +727,10 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .tp-tag { font-size: .7rem; font-weight: 800; color: #1e40af; background: #e6f0ff; border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
 .tp-check { color: var(--orange-d); font-weight: 900; }
 .tp-none { color: var(--muted); padding: 12px 10px; cursor: default !important; }
+
+/* ===== Thống kê theo xe ===== */
+.period-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.period-nav { display: flex; align-items: center; gap: 6px; }
+.period-nav .date-field { width: 160px; }
+.period-nav .btn.sm { min-width: 38px; }
+.period-label { color: var(--navy); }

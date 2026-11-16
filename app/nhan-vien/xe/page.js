@@ -1,8 +1,58 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { supabase, vnd } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
+import DateInput from '../../../components/DateInput';
+
+// ---------- Kỳ thống kê (ngày / tuần / tháng / năm) ----------
+const pad = (n) => String(n).padStart(2, '0');
+const iso = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+const parse = (s) => {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+};
+const dmy = (s) => `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}`;
+const todayIso = () => {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+};
+
+const PERIODS = [
+  { id: 'day', label: 'Ngày' },
+  { id: 'week', label: 'Tuần' },
+  { id: 'month', label: 'Tháng' },
+  { id: 'year', label: 'Năm' },
+  { id: 'all', label: 'Tất cả' },
+];
+
+// Khoảng ngày [from, to] của kỳ chứa ngày "anchor". Tuần tính từ thứ Hai đến Chủ nhật.
+function rangeOf(period, anchor) {
+  if (period === 'all') return { from: null, to: null, label: 'Tất cả thời gian' };
+  const a = parse(anchor);
+  if (period === 'day') return { from: anchor, to: anchor, label: `Ngày ${dmy(anchor)}` };
+  if (period === 'week') {
+    const dow = (a.getUTCDay() + 6) % 7; // 0 = thứ Hai
+    const mon = new Date(a.getTime() - dow * 86400000);
+    const sun = new Date(mon.getTime() + 6 * 86400000);
+    return { from: iso(mon), to: iso(sun), label: `Tuần từ ${dmy(iso(mon))} đến ${dmy(iso(sun))}` };
+  }
+  if (period === 'month') {
+    const first = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), 1));
+    const last = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + 1, 0));
+    return { from: iso(first), to: iso(last), label: `Tháng ${pad(a.getUTCMonth() + 1)}/${a.getUTCFullYear()}` };
+  }
+  const y = a.getUTCFullYear();
+  return { from: `${y}-01-01`, to: `${y}-12-31`, label: `Năm ${y}` };
+}
+
+function shiftAnchor(period, anchor, dir) {
+  const a = parse(anchor);
+  if (period === 'day') return iso(new Date(a.getTime() + dir * 86400000));
+  if (period === 'week') return iso(new Date(a.getTime() + dir * 7 * 86400000));
+  if (period === 'month') return iso(new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + dir, 1)));
+  return iso(new Date(Date.UTC(a.getUTCFullYear() + dir, 0, 1)));
+}
 
 const blank = { plate: '', volume_cbm: '', payload_tons: '', length_m: '', width_m: '', height_m: '' };
 const num = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
@@ -20,6 +70,36 @@ export default function Page() {
   const [editing, setEditing] = useState(null);
   const [formErr, setFormErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [period, setPeriod] = useState('month');
+  const [anchor, setAnchor] = useState(todayIso());
+  const [includePending, setIncludePending] = useState(false);
+  const [stats, setStats] = useState({});
+  const [statsErr, setStatsErr] = useState('');
+  const [undated, setUndated] = useState(0);
+  const range = useMemo(() => rangeOf(period, anchor), [period, anchor]);
+
+  // Số liệu theo xe trong kỳ đã chọn (database tự cộng từ Đơn hàng và Chi tiền)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [r, u] = await Promise.all([
+        supabase.rpc('vehicle_stats', { p_from: range.from, p_to: range.to, p_include_pending: includePending }),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).is('ship_date', null).not('plate', 'is', null),
+      ]);
+      if (cancelled) return;
+      if (r.error) {
+        setStatsErr('Chưa có số liệu thống kê. Hãy chạy supabase/vehicle-stats.sql trên Supabase.');
+        setStats({});
+      } else {
+        setStatsErr('');
+        setStats(Object.fromEntries((r.data || []).map((x) => [x.vehicle_id, x])));
+      }
+      setUndated(u.count || 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [range.from, range.to, includePending]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -40,6 +120,19 @@ export default function Page() {
     const s = q.trim().toLowerCase();
     return rows.filter((r) => !s || r.plate.toLowerCase().includes(s));
   }, [rows, q]);
+
+  const totals = useMemo(() => {
+    const t = { n: 0, rev: 0, fuel: 0, maint: 0 };
+    shown.forEach((r) => {
+      const s = stats[r.id];
+      if (!s) return;
+      t.n += Number(s.order_count);
+      t.rev += Number(s.revenue);
+      t.fuel += Number(s.fuel_cost);
+      t.maint += Number(s.maintenance_cost);
+    });
+    return t;
+  }, [shown, stats]);
 
   function openEdit(r) {
     setFormErr('');
@@ -108,7 +201,41 @@ export default function Page() {
         <input aria-label="Tìm theo biển số" placeholder="Tìm theo biển số xe..." value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
+      <div className="period-bar">
+        <div className="seg" role="radiogroup" aria-label="Kỳ thống kê">
+          {PERIODS.map((p) => (
+            <button type="button" key={p.id} role="radio" aria-checked={period === p.id} className={period === p.id ? 'on' : ''} onClick={() => setPeriod(p.id)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {period !== 'all' && (
+          <div className="period-nav">
+            <button type="button" className="btn btn-outline sm" onClick={() => setAnchor((a) => shiftAnchor(period, a, -1))} aria-label="Kỳ trước">‹</button>
+            <DateInput aria-label="Chọn một ngày trong kỳ" value={anchor} onChange={(v) => v && setAnchor(v)} />
+            <button type="button" className="btn btn-outline sm" onClick={() => setAnchor((a) => shiftAnchor(period, a, 1))} aria-label="Kỳ sau">›</button>
+            <button type="button" className="btn btn-outline sm" onClick={() => setAnchor(todayIso())}>Hôm nay</button>
+          </div>
+        )}
+        <strong className="period-label">{range.label}</strong>
+        <label className="check-inline" style={{ marginLeft: 'auto' }}>
+          <input type="checkbox" checked={includePending} onChange={(e) => setIncludePending(e.target.checked)} /> Tính cả phiếu chi chờ duyệt
+        </label>
+      </div>
+
+      <div className="kpis" style={{ marginBottom: 14, gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+        <div className="kpi"><span className="kpi-icon tone-navy"><span aria-hidden="true">#</span></span><span className="kpi-text"><span className="kpi-label">Tổng số đơn hàng</span><span className="kpi-value">{totals.n}</span><span className="kpi-sub">của {shown.length} xe</span></span></div>
+        <div className="kpi"><span className="kpi-icon tone-ok"><span aria-hidden="true">₫</span></span><span className="kpi-text"><span className="kpi-label">Tổng doanh thu</span><span className="kpi-value">{vnd(totals.rev)}</span><span className="kpi-sub">cước các đơn hàng</span></span></div>
+        <div className="kpi"><span className="kpi-icon tone-warn"><span aria-hidden="true">⛽</span></span><span className="kpi-text"><span className="kpi-label">Chi phí nhiên liệu / bảo dưỡng</span><span className="kpi-value">{vnd(totals.fuel + totals.maint)}</span><span className="kpi-sub">NL {vnd(totals.fuel)} · BD {vnd(totals.maint)}</span></span></div>
+      </div>
+
       {err && <p className="err" role="alert">{err}</p>}
+      {statsErr && <p className="err" role="alert">{statsErr}</p>}
+      {period !== 'all' && undated > 0 && (
+        <p className="muted small" style={{ marginTop: 0 }}>
+          Có {undated} đơn hàng đã gán xe nhưng chưa có ngày vận chuyển, nên chỉ nằm trong mục "Tất cả" (không tính theo ngày, tuần, tháng, năm).
+        </p>
+      )}
       <div className="table-wrap">
         <table className="fleet-table staff-table">
           <thead>
@@ -117,6 +244,9 @@ export default function Page() {
               <th>Khối lượng hàng</th>
               <th>Tải trọng xe</th>
               <th>Kích thước thùng</th>
+              <th className="num">Tổng số đơn hàng</th>
+              <th className="num">Tổng doanh thu</th>
+              <th className="num">Chi phí nhiên liệu / bảo dưỡng</th>
               <th aria-label="Thao tác"></th>
             </tr>
           </thead>
@@ -127,15 +257,44 @@ export default function Page() {
                 <td>{r.volume_cbm != null && `${Number(r.volume_cbm)} CBM`}</td>
                 <td>{r.payload_tons != null && `${Number(r.payload_tons)} tấn`}</td>
                 <td>{size(r)}</td>
+                {(() => {
+                  const s = stats[r.id];
+                  const cost = s ? Number(s.fuel_cost) + Number(s.maintenance_cost) : 0;
+                  return (
+                    <>
+                      <td className="num">{s ? <strong className={Number(s.order_count) ? '' : 'debt-zero'}>{Number(s.order_count)}</strong> : <span className="muted">…</span>}</td>
+                      <td className="num">{s ? <strong className={Number(s.revenue) ? 'amt-in' : 'debt-zero'}>{vnd(s.revenue)}</strong> : <span className="muted">…</span>}</td>
+                      <td className="num">
+                        {s ? (
+                          <>
+                            <strong className={cost ? 'amt-out' : 'debt-zero'}>{vnd(cost)}</strong>
+                            <div className="muted small">Nhiên liệu {vnd(s.fuel_cost)} · Bảo dưỡng {vnd(s.maintenance_cost)}</div>
+                          </>
+                        ) : <span className="muted">…</span>}
+                      </td>
+                    </>
+                  );
+                })()}
                 <td className="actions">
                   <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>
                   <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
                 </td>
               </tr>
             ))}
-            {!loading && !shown.length && <tr><td colSpan={5} className="muted">Chưa có xe nào.</td></tr>}
-            {loading && <tr><td colSpan={5} className="muted">Đang tải...</td></tr>}
+            {!loading && !shown.length && <tr><td colSpan={8} className="muted">Chưa có xe nào.</td></tr>}
+            {loading && <tr><td colSpan={8} className="muted">Đang tải...</td></tr>}
           </tbody>
+          {shown.length > 0 && (
+            <tfoot>
+              <tr>
+                <td colSpan={4}><strong>Tổng ({shown.length} xe) · {range.label}</strong></td>
+                <td className="num"><strong>{totals.n}</strong></td>
+                <td className="num"><strong>{vnd(totals.rev)}</strong></td>
+                <td className="num"><strong>{vnd(totals.fuel + totals.maint)}</strong></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
       <p className="muted small">{shown.length} / {rows.length} xe</p>
