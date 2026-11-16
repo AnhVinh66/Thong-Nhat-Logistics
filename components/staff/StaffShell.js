@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase, LOGIN_DOMAIN, displayLogin } from '../../lib/supabase';
 import Logo from '../Logo';
+import Icon from '../Icon';
 import DriverApp from './DriverApp';
 import InstallApp, { useServiceWorker } from './InstallApp';
 
@@ -117,36 +118,98 @@ export default function StaffShell({ children }) {
     return <DriverApp driverName={role.driver_name} email={session.user.email} onLogout={() => supabase.auth.signOut()} />;
   }
 
-  const links = [
-    { href: '/nhan-vien/', label: 'Tổng quan' },
-    { href: '/nhan-vien/khach-hang/', label: 'Khách hàng' },
-    { href: '/nhan-vien/don-hang/', label: 'Đơn hàng' },
-    { href: '/nhan-vien/xe/', label: 'Danh sách xe' },
-    { href: '/nhan-vien/tai-khoan/', label: 'Tài khoản' },
-  ];
-  const active = (h) => (h === '/nhan-vien/' ? pathname.replace(/\/$/, '') === '/nhan-vien' : pathname.startsWith(h));
+  return (
+    <AdminLayout pathname={pathname} login={displayLogin(session.user.email)} onLogout={() => supabase.auth.signOut()}>
+      {children}
+    </AdminLayout>
+  );
+}
+
+const sections = [
+  {
+    title: 'Điều phối',
+    links: [
+      { href: '/nhan-vien/', label: 'Tổng quan', icon: 'grid' },
+      { href: '/nhan-vien/don-hang/', label: 'Đơn hàng', icon: 'route' },
+    ],
+  },
+  {
+    title: 'Dữ liệu',
+    links: [
+      { href: '/nhan-vien/khach-hang/', label: 'Khách hàng', icon: 'users' },
+      { href: '/nhan-vien/xe/', label: 'Danh sách xe', icon: 'truck' },
+    ],
+  },
+  {
+    title: 'Hệ thống',
+    links: [{ href: '/nhan-vien/tai-khoan/', label: 'Tài khoản', icon: 'key' }],
+  },
+];
+
+// Bố cục quản trị: menu cố định bên trái (máy tính), thu gọn thành nút ☰ (điện thoại)
+function AdminLayout({ pathname, login, onLogout, children }) {
+  const [open, setOpen] = useState(false);
+  const isActive = (h) => (h === '/nhan-vien/' ? pathname.replace(/\/$/, '') === '/nhan-vien' : pathname.startsWith(h));
+  const current = sections.flatMap((s) => s.links).find((l) => isActive(l.href));
+
+  // Đóng menu khi chuyển trang hoặc bấm Esc
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
 
   return (
-    <div className="staff">
-      <header className="staff-bar">
-        <div className="container staff-bar-in">
-          <Link href="/nhan-vien/" aria-label="Trang nhân viên"><Logo light /></Link>
-          <nav className="staff-nav" aria-label="Điều hướng nhân viên">
-            {links.map((l) => (
-              <Link key={l.href} href={l.href} className={active(l.href) ? 'active' : ''} aria-current={active(l.href) ? 'page' : undefined}>
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="staff-user">
-            <span className="small">{displayLogin(session.user.email)}</span>
-            <button className="btn btn-ghost" style={{ minHeight: 38, padding: '6px 14px' }} onClick={() => supabase.auth.signOut()}>
-              Đăng xuất
-            </button>
-          </div>
+    <div className="admin">
+      <aside id="admin-side" className={`side ${open ? 'open' : ''}`} aria-label="Menu quản trị">
+        <div className="side-brand">
+          <Link href="/nhan-vien/" aria-label="Tổng quan"><Logo light /></Link>
+          <button className="side-close" onClick={() => setOpen(false)} aria-label="Đóng menu"><Icon name="close" size={22} /></button>
         </div>
-      </header>
-      <div className="container staff-main">{children}</div>
+        <nav className="side-nav">
+          {sections.map((s) => (
+            <div className="side-group" key={s.title}>
+              <p className="side-title">{s.title}</p>
+              {s.links.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`side-link ${isActive(l.href) ? 'active' : ''}`}
+                  aria-current={isActive(l.href) ? 'page' : undefined}
+                >
+                  <Icon name={l.icon} size={20} />
+                  <span>{l.label}</span>
+                </Link>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="side-foot">
+          <a className="side-link" href="/" target="_blank" rel="noopener noreferrer">
+            <Icon name="external" size={20} /><span>Xem website</span>
+          </a>
+          <div className="side-user">
+            <span className="side-avatar" aria-hidden="true">{(login[0] || '?').toUpperCase()}</span>
+            <span className="side-login" title={login}>{login}</span>
+          </div>
+          <button className="side-link side-logout" onClick={onLogout}>
+            <Icon name="logout" size={20} /><span>Đăng xuất</span>
+          </button>
+        </div>
+      </aside>
+      {open && <div className="side-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />}
+
+      <div className="admin-main">
+        <header className="admin-top">
+          <button className="admin-burger" onClick={() => setOpen(true)} aria-label="Mở menu" aria-expanded={open} aria-controls="admin-side">
+            <Icon name="menu" size={22} />
+          </button>
+          <span className="admin-top-title">{current?.label || 'Nhân viên'}</span>
+        </header>
+        <main className="admin-content">{children}</main>
+      </div>
     </div>
   );
 }

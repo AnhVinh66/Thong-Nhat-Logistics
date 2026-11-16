@@ -1,29 +1,52 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, customerTypes } from '../../../lib/supabase';
+import { supabase, customerTypes, vnd } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
 
 const blank = { name: '', phone: '', email: '', address: '', company: '', tax_code: '', type: 'le', note: '' };
+const dmy = (ts) => (ts ? new Date(ts).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
+
+// Công nợ theo khách: đơn 1 điểm lấy công nợ của đơn; đơn nhiều điểm lấy cước của từng điểm trả thuộc khách đó
+function debtByCustomer(orders) {
+  const m = {};
+  const add = (id, v, orderId) => {
+    if (!id) return;
+    m[id] = m[id] || { debt: 0, orders: new Set() };
+    m[id].debt += Number(v || 0);
+    m[id].orders.add(orderId);
+  };
+  orders.forEach((o) => {
+    if (o.order_type === 'multi') (o.order_stops || []).forEach((s) => add(s.customer_id, s.fee, o.id));
+    else add(o.customer_id, o.debt ?? o.fee, o.id);
+  });
+  return m;
+}
 
 export default function Page() {
   const [rows, setRows] = useState([]);
+  const [debts, setDebts] = useState({});
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [q, setQ] = useState('');
   const [type, setType] = useState('');
-  const [editing, setEditing] = useState(null); // null | {id?, ...fields}
+  const [sort, setSort] = useState('debt'); // debt | new | name
+  const [editing, setEditing] = useState(null);
   const [formErr, setFormErr] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
-    if (error) setErr('Không tải được danh sách khách hàng.');
+    const [c, o] = await Promise.all([
+      supabase.from('customers').select('*').order('created_at', { ascending: false }),
+      supabase.from('orders').select('id, order_type, customer_id, fee, debt, order_stops(customer_id, fee)'),
+    ]);
+    if (c.error) setErr('Không tải được danh sách khách hàng.');
     else {
       setErr('');
-      setRows(data);
+      setRows(c.data);
     }
+    if (!o.error) setDebts(debtByCustomer(o.data || []));
     setLoading(false);
   }, []);
 
@@ -33,12 +56,20 @@ export default function Page() {
 
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return rows.filter(
+    const list = rows.filter(
       (r) =>
         (!type || r.type === type) &&
         (!s || [r.name, r.phone, r.email, r.company, r.tax_code, r.address].some((v) => (v || '').toLowerCase().includes(s)))
     );
-  }, [rows, q, type]);
+    const debtOf = (r) => debts[r.id]?.debt || 0;
+    return [...list].sort((a, b) => {
+      if (sort === 'name') return a.name.localeCompare(b.name, 'vi');
+      if (sort === 'new') return (b.created_at || '').localeCompare(a.created_at || '');
+      return debtOf(b) - debtOf(a) || a.name.localeCompare(b.name, 'vi');
+    });
+  }, [rows, q, type, sort, debts]);
+
+  const totalDebt = useMemo(() => shown.reduce((a, r) => a + (debts[r.id]?.debt || 0), 0), [shown, debts]);
 
   async function save(e) {
     e.preventDefault();
@@ -77,12 +108,17 @@ export default function Page() {
   }
 
   const set = (k) => (e) => setEditing((s) => ({ ...s, [k]: e.target.value }));
+  const openEdit = (r) => {
+    setFormErr('');
+    const { created_at, ...rest } = r || {};
+    setEditing(r ? { ...blank, ...rest } : { ...blank });
+  };
 
   return (
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Khách hàng</h1>
-        <button className="btn btn-primary" onClick={() => { setFormErr(''); setEditing({ ...blank }); }}>+ Thêm khách hàng</button>
+        <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm khách hàng</button>
       </div>
 
       <div className="toolbar">
@@ -91,35 +127,81 @@ export default function Page() {
           <option value="">Tất cả loại khách</option>
           {Object.entries(customerTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
+        <select aria-label="Sắp xếp" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="debt">Công nợ: nhiều → ít</option>
+          <option value="new">Mới tạo trước</option>
+          <option value="name">Tên A → Z</option>
+        </select>
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
-      <div className="table-wrap">
-        <table className="fleet-table staff-table">
-          <thead>
-            <tr><th>Tên</th><th>Loại</th><th>SĐT</th><th>Email</th><th>Công ty / MST</th><th>Địa chỉ</th><th aria-label="Thao tác"></th></tr>
-          </thead>
-          <tbody>
-            {shown.map((r) => (
+
+      <table className="cus-table">
+        <thead>
+          <tr>
+            <th className="c-date">Ngày tạo</th>
+            <th>Khách hàng</th>
+            <th>Liên hệ</th>
+            <th>Công ty / MST</th>
+            <th>Địa chỉ</th>
+            <th className="c-debt">Công nợ</th>
+            <th className="c-act"><span className="sr-only">Thao tác</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((r) => {
+            const d = debts[r.id];
+            return (
               <tr key={r.id}>
-                <td><strong>{r.name}</strong>{r.note && <div className="muted small">{r.note}</div>}</td>
-                <td>{customerTypes[r.type]}</td>
-                <td><a href={`tel:${r.phone}`}>{r.phone}</a></td>
-                <td>{r.email}</td>
-                <td>{r.company}{r.tax_code && <div className="muted small">MST: {r.tax_code}</div>}</td>
-                <td>{r.address}</td>
-                <td className="actions">
-                  <button className="btn btn-outline sm" onClick={() => { setFormErr(''); setEditing({ ...blank, ...r }); }}>Sửa</button>
-                  <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
+                <td className="c-date" data-label="Ngày tạo"><div>{dmy(r.created_at)}</div></td>
+                <td data-label="Khách hàng">
+                  <div>
+                    <strong className="c-name">{r.name}</strong>
+                    <span className={`pill pill-type-${r.type}`}>{customerTypes[r.type]}</span>
+                    {r.note && <div className="muted small c-note">{r.note}</div>}
+                  </div>
+                </td>
+                <td data-label="Liên hệ">
+                  <div>
+                    <a href={`tel:${r.phone}`} className="c-phone">{r.phone}</a>
+                    {r.email && <div className="muted small c-break">{r.email}</div>}
+                  </div>
+                </td>
+                <td data-label="Công ty / MST">
+                  <div>
+                    {r.company || <span className="muted">—</span>}
+                    {r.tax_code && <div className="muted small">MST: {r.tax_code}</div>}
+                  </div>
+                </td>
+                <td data-label="Địa chỉ" className="c-break"><div>{r.address || <span className="muted">—</span>}</div></td>
+                <td className="c-debt" data-label="Công nợ">
+                  <div>
+                    <strong className={d?.debt ? 'debt-has' : 'debt-zero'}>{vnd(d?.debt || 0)}</strong>
+                    {d && <div className="muted small">{d.orders.size} đơn</div>}
+                  </div>
+                </td>
+                <td className="c-act">
+                  <div className="actions">
+                    <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>
+                    <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
+                  </div>
                 </td>
               </tr>
-            ))}
-            {!loading && !shown.length && <tr><td colSpan={7} className="muted">Chưa có khách hàng nào.</td></tr>}
-            {loading && <tr><td colSpan={7} className="muted">Đang tải...</td></tr>}
-          </tbody>
-        </table>
-      </div>
-      <p className="muted small">{shown.length} / {rows.length} khách hàng</p>
+            );
+          })}
+          {!loading && !shown.length && <tr><td colSpan={7} className="muted">Chưa có khách hàng nào.</td></tr>}
+          {loading && <tr><td colSpan={7} className="muted">Đang tải...</td></tr>}
+        </tbody>
+        {shown.length > 0 && (
+          <tfoot>
+            <tr>
+              <td colSpan={5}><strong>Tổng ({shown.length} khách hàng)</strong></td>
+              <td className="c-debt" data-label="Tổng công nợ"><div><strong>{vnd(totalDebt)}</strong></div></td>
+              <td className="c-act" />
+            </tr>
+          </tfoot>
+        )}
+      </table>
 
       {editing && (
         <Modal title={editing.id ? 'Sửa khách hàng' : 'Thêm khách hàng'} onClose={() => setEditing(null)}>

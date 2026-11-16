@@ -81,6 +81,21 @@ export default function Page() {
     load();
   }, [load]);
 
+  // Mở từ trang Tổng quan: ?q=DH0012 (lọc sẵn đơn) hoặc ?new=1 (mở form tạo đơn)
+  const [wantNew, setWantNew] = useState(false);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('q')) setQ(p.get('q'));
+    if (p.get('new') === '1') setWantNew(true);
+  }, []);
+  useEffect(() => {
+    if (!wantNew || !customers.length) return;
+    setWantNew(false);
+    openEdit(null);
+    window.history.replaceState(null, '', window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantNew, customers.length]);
+
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return rows;
