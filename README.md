@@ -63,6 +63,7 @@ Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km t
 3k. **Chi tiền** (Đề xuất Chi, duyệt Chờ duyệt → Đã duyệt → Đã thanh toán, ảnh hoá đơn, đối chiếu sao kê tiền ra): chạy `supabase/expenses.sql` SAU `vehicles.sql`, `bank.sql`, `reconcile.sql` (đã có trong `schema.sql` bản hiện tại). Nếu sau này chạy lại `reconcile.sql` thì phải chạy lại `expenses.sql`.
 3l. **Mã đơn con cho điểm trả** (DH0004-1, DH0004-2...): chạy `supabase/stop-codes.sql` SAU `multi-stop.sql` (đã có trong `schema.sql` bản hiện tại). Số hiệu do database cấp, cố định và không bao giờ dùng lại.
 3m. **Thống kê theo xe** (số đơn, doanh thu, chi phí nhiên liệu / bảo dưỡng theo ngày, tuần, tháng, năm ở trang Danh sách xe): chạy `supabase/vehicle-stats.sql` SAU `expenses.sql` (đã có trong `schema.sql` bản hiện tại).
+3n. **Phí cầu đường và phí bến bãi** tại điểm trả hàng (Đơn hàng): chạy `supabase/order-fees.sql` SAU `multi-stop.sql` (đã có trong `schema.sql` bản hiện tại). Hai khoản phí được ghi nhận riêng, không cộng vào cước phí.
 4. **Authentication → Users → Add user** để tạo tài khoản cho từng nhân viên (email + mật khẩu). Mọi nhân viên có quyền như nhau.
 5. **Project Settings → API**: copy *Project URL* và *anon public key* vào `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` khi chạy thử, GitHub *Variables* khi deploy).
 

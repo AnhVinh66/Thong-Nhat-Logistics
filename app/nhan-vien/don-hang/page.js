@@ -2,18 +2,33 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, vnd, orderCode, stopCode } from '../../../lib/supabase';
+import MoneyInput from '../../../components/staff/MoneyInput';
+import FeePopup from '../../../components/staff/FeePopup';
 import { drivers as defaultDrivers } from '../../../lib/site';
 import Modal from '../../../components/staff/Modal';
 import DateInput from '../../../components/DateInput';
 import DeliveryDocs, { removeDocFiles } from '../../../components/staff/DeliveryDocs';
 
-const blankStop = { customer_id: '', address: '', cargo: '', weight: '', fee: '' };
+const blankStop = { customer_id: '', address: '', cargo: '', weight: '', fee: '', toll_fee: '', parking_fee: '' };
 const blank = {
   order_type: 'single',
-  customer_id: '', pickup: '', delivery: '', cargo: '', weight: '', plate: '', driver: '', ship_date: '', fee: '',
+  customer_id: '', pickup: '', delivery: '', cargo: '', weight: '', plate: '', driver: '', ship_date: '', fee: '', toll_fee: '', parking_fee: '',
   stops: [{ ...blankStop }, { ...blankStop }],
   oldStopIds: [],
 };
+
+// Phí cầu đường / bến bãi hiển thị dưới cước (chỉ khi có phát sinh)
+function Extras({ toll, park }) {
+  const t = Number(toll || 0);
+  const k = Number(park || 0);
+  if (!t && !k) return null;
+  return (
+    <span className="extras">
+      {t > 0 && <span>Cầu đường {vnd(t)}</span>}
+      {k > 0 && <span>Bến bãi {vnd(k)}</span>}
+    </span>
+  );
+}
 
 const sortedStops = (r) => [...(r.order_stops || [])].sort((a, b) => a.position - b.position);
 
@@ -113,6 +128,7 @@ export default function Page() {
   const setField = (k) => (e) => setEditing((s) => ({ ...s, [k]: e.target.value }));
   const setStop = (i, k) => (e) =>
     setEditing((s) => ({ ...s, stops: s.stops.map((st, j) => (j === i ? { ...st, [k]: e.target.value } : st)) }));
+  const setStopVal = (i, k) => (v) => setEditing((s) => ({ ...s, stops: s.stops.map((st, j) => (j === i ? { ...st, [k]: v } : st)) }));
   const addStop = () => setEditing((s) => ({ ...s, stops: [...s.stops, { ...blankStop }] }));
   const removeStop = (i) => {
     const st = editing.stops[i];
@@ -152,6 +168,9 @@ export default function Page() {
       cargo: st.cargo || '',
       weight: st.weight || '',
       fee: String(st.fee),
+      toll_fee: Number(st.toll_fee) > 0 ? String(st.toll_fee) : '',
+      parking_fee: Number(st.parking_fee) > 0 ? String(st.parking_fee) : '',
+      hadFees: Number(st.toll_fee || 0) + Number(st.parking_fee || 0) > 0,
     }));
     setEditing({
       id: r.id,
@@ -166,6 +185,9 @@ export default function Page() {
       driver: r.driver || '',
       ship_date: r.ship_date || '',
       fee: String(r.fee),
+      toll_fee: Number(r.toll_fee) > 0 ? String(r.toll_fee) : '',
+      parking_fee: Number(r.parking_fee) > 0 ? String(r.parking_fee) : '',
+      hadFees: Number(r.toll_fee || 0) + Number(r.parking_fee || 0) > 0,
       stops: stops.length ? stops : [{ ...blankStop }],
       oldStopIds: sortedStops(r).map((st) => st.id),
       truck: r.truck,
@@ -179,6 +201,8 @@ export default function Page() {
     if (!editing.pickup.trim()) return setFormErr('Vui lòng nhập điểm lấy hàng.');
 
     let stops = [];
+    let tollSum = 0;
+    let parkSum = 0;
     let fee = 0;
     if (multi) {
       if (!editing.stops.length) return setFormErr('Cần có ít nhất một điểm trả hàng.');
@@ -195,13 +219,21 @@ export default function Page() {
         cargo: st.cargo.trim() || null,
         weight: st.weight.trim() || null,
         fee: Number(st.fee || 0),
+        // Chỉ gửi cột phí khi có phát sinh (hoặc điểm này từng có phí) để không phụ thuộc việc đã chạy order-fees.sql chưa
+        ...(Number(st.toll_fee || 0) > 0 || Number(st.parking_fee || 0) > 0 || st.hadFees
+          ? { toll_fee: Number(st.toll_fee || 0), parking_fee: Number(st.parking_fee || 0) }
+          : {}),
       }));
       fee = stops.reduce((a, st) => a + st.fee, 0);
+      tollSum = stops.reduce((a, st) => a + (st.toll_fee || 0), 0);
+      parkSum = stops.reduce((a, st) => a + (st.parking_fee || 0), 0);
     } else {
       if (!editing.customer_id) return setFormErr('Vui lòng chọn khách hàng.');
       if (!editing.delivery.trim()) return setFormErr('Vui lòng nhập điểm đến.');
       fee = Number(editing.fee || 0);
       if (fee < 0 || Number.isNaN(fee)) return setFormErr('Cước phí phải là số không âm.');
+      tollSum = Number(editing.toll_fee || 0);
+      parkSum = Number(editing.parking_fee || 0);
     }
 
     setBusy(true);
@@ -218,6 +250,7 @@ export default function Page() {
       driver: editing.driver?.trim() || null,
       ship_date: editing.ship_date || null,
       fee,
+      ...(tollSum > 0 || parkSum > 0 || editing.hadFees ? { toll_fee: tollSum, parking_fee: parkSum } : {}),
     };
 
     let failed = false;
@@ -278,7 +311,7 @@ export default function Page() {
     setBusy(false);
     if (failed) {
       return setFormErr(
-        'Không lưu được. Nếu bạn vừa cập nhật tính năng nhiều điểm, hãy chạy supabase/multi-stop.sql trên Supabase rồi thử lại.'
+        'Không lưu được. Nếu bạn vừa cập nhật tính năng mới, hãy chạy các file SQL mới nhất (multi-stop.sql, stop-codes.sql, order-fees.sql) trên Supabase rồi thử lại.'
       );
     }
     setEditing(null);
@@ -376,7 +409,10 @@ export default function Page() {
                     <td>{!isMulti && r.cargo}{!isMulti && r.weight && <div className="muted small">{r.weight}</div>}</td>
                     <td>{r.truck}{(r.plate || r.driver) && <div className="muted small">{[r.plate, r.driver].filter(Boolean).join(' · ')}</div>}</td>
                     <td>{r.ship_date ? r.ship_date.split('-').reverse().join('/') : ''}</td>
-                    <td className="num">{vnd(r.fee)}</td>
+                    <td className="num">
+                      {vnd(r.fee)}
+                      <Extras toll={r.toll_fee} park={r.parking_fee} />
+                    </td>
                     <td className="actions">
                       {!isMulti && (
                         <button
@@ -411,7 +447,7 @@ export default function Page() {
                               <strong>{st.customers?.name}</strong>
                               <span className="muted"> ({st.customers?.phone})</span> – {st.address}
                               {(st.cargo || st.weight) && <span className="muted"> · {[st.cargo, st.weight].filter(Boolean).join(', ')}</span>}
-                              <span className="stop-fee">{vnd(st.fee)}</span>
+                              <span className="stop-fee">{vnd(st.fee)}<Extras toll={st.toll_fee} park={st.parking_fee} /></span>
                             </li>
                           ))}
                         </ol>
@@ -522,7 +558,15 @@ export default function Page() {
             ) : (
               <div className="grid-2">
                 <div className="field"><label htmlFor="o-date">Ngày vận chuyển</label><DateInput id="o-date" value={editing.ship_date || ''} onChange={(v) => setEditing((s) => ({ ...s, ship_date: v }))} /></div>
-                <div className="field"><label htmlFor="o-fee">Cước phí (đồng)</label><input id="o-fee" type="number" min="0" inputMode="numeric" value={editing.fee} onChange={setField('fee')} /></div>
+                <div className="field"><label htmlFor="o-fee">Cước phí (đồng)</label><MoneyInput id="o-fee" value={editing.fee} onChange={(v) => setEditing((s) => ({ ...s, fee: v }))} placeholder="VD: 3,500,000" /></div>
+              </div>
+            )}
+
+            {!multi && (
+              <div className="fee-row">
+                <span className="label-like">Phí phát sinh tại điểm trả</span>
+                <FeePopup idPrefix="o-toll" label="Phí cầu đường" value={editing.toll_fee} onChange={(v) => setEditing((s) => ({ ...s, toll_fee: v }))} />
+                <FeePopup idPrefix="o-park" label="Phí bến bãi" value={editing.parking_fee} onChange={(v) => setEditing((s) => ({ ...s, parking_fee: v }))} />
               </div>
             )}
 
@@ -548,7 +592,12 @@ export default function Page() {
                     <div className="grid-3" style={{ gap: 12 }}>
                       <div className="field"><label htmlFor={`s-cargo-${i}`}>Loại hàng</label><input id={`s-cargo-${i}`} value={st.cargo} onChange={setStop(i, 'cargo')} /></div>
                       <div className="field"><label htmlFor={`s-w-${i}`}>Khối lượng</label><input id={`s-w-${i}`} value={st.weight} onChange={setStop(i, 'weight')} placeholder="VD: 2 tấn" /></div>
-                      <div className="field"><label htmlFor={`s-fee-${i}`}>Cước phí (đồng)</label><input id={`s-fee-${i}`} type="number" min="0" inputMode="numeric" value={st.fee} onChange={setStop(i, 'fee')} /></div>
+                      <div className="field"><label htmlFor={`s-fee-${i}`}>Cước phí (đồng)</label><MoneyInput id={`s-fee-${i}`} value={st.fee} onChange={setStopVal(i, 'fee')} placeholder="VD: 3,500,000" /></div>
+                    </div>
+                    <div className="fee-row">
+                      <span className="label-like">Phí phát sinh tại điểm này</span>
+                      <FeePopup idPrefix={`s-toll-${i}`} label="Phí cầu đường" value={st.toll_fee} onChange={setStopVal(i, 'toll_fee')} />
+                      <FeePopup idPrefix={`s-park-${i}`} label="Phí bến bãi" value={st.parking_fee} onChange={setStopVal(i, 'parking_fee')} />
                     </div>
                     {editing.stops.length > 1 && (
                       <button type="button" className="btn btn-danger sm" style={{ justifySelf: 'start' }} onClick={() => removeStop(i)}>

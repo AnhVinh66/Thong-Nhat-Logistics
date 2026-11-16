@@ -180,6 +180,13 @@ drop trigger if exists order_stops_keep on public.order_stops;
 create trigger order_stops_keep before update on public.order_stops
   for each row execute function public.order_stops_keep_no();
 
+-- ===== Phí cầu đường và bến bãi =====
+
+alter table public.orders add column if not exists toll_fee bigint not null default 0 check (toll_fee >= 0);
+alter table public.orders add column if not exists parking_fee bigint not null default 0 check (parking_fee >= 0);
+alter table public.order_stops add column if not exists toll_fee bigint not null default 0 check (toll_fee >= 0);
+alter table public.order_stops add column if not exists parking_fee bigint not null default 0 check (parking_fee >= 0);
+
 -- ===== Điểm lấy hàng đã lưu =====
 
 create table if not exists public.pickup_points (

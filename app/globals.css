@@ -734,3 +734,17 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .period-nav .date-field { width: 160px; }
 .period-nav .btn.sm { min-width: 38px; }
 .period-label { color: var(--navy); }
+
+/* ===== Phí cầu đường / bến bãi ===== */
+.fee-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fee-row .label-like { margin-right: 4px; }
+.fee-pop { position: relative; }
+.fee-trigger { font: inherit; font-size: .9rem; font-weight: 600; min-height: 40px; padding: 0 14px; border: 1.5px dashed #b8c4d8; border-radius: 10px; background: #fff; color: var(--navy); cursor: pointer; }
+.fee-trigger:hover { border-color: var(--orange); }
+.fee-trigger.has { border-style: solid; border-color: #86d9a6; background: #f1fcf5; color: #166534; }
+.fee-trigger[aria-expanded=true] { border-color: var(--orange); outline: 3px solid rgba(249, 115, 22, .25); }
+.fee-panel { position: absolute; z-index: 45; top: calc(100% + 6px); left: 0; width: 270px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 40px rgba(11, 37, 69, .22); padding: 14px; display: grid; gap: 8px; }
+.fee-title { font-weight: 800; color: var(--navy); }
+.fee-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
+.extras { display: grid; font-size: .74rem; font-weight: 600; color: var(--muted); line-height: 1.35; margin-top: 2px; white-space: nowrap; }
+.stop-list .stop-fee .extras { text-align: right; }
