@@ -188,6 +188,7 @@ export default function Page() {
   const [to, setTo] = useState('');
   const [open, setOpen] = useState(null);
   const [editRow, setEditRow] = useState(null);
+  const [creating, setCreating] = useState(false);
   const [notice, setNotice] = useState(null);
   const [rec, setRec] = useState('');
   const [cands, setCands] = useState([]);
@@ -220,8 +221,6 @@ export default function Page() {
 
   useEffect(() => {
     load();
-    window.addEventListener('collection-saved', load);
-    return () => window.removeEventListener('collection-saved', load);
   }, [load]);
 
   const recon = useMemo(() => Object.fromEntries(rows.map((r) => [r.id, reconOf(r, cands, banks)])), [rows, cands, banks]);
@@ -262,7 +261,7 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Thu tiền</h1>
-        <p className="muted" style={{ margin: 0 }}>Tạo phiếu bằng nút <strong>Đề xuất Thu</strong> ở góc phải màn hình.</p>
+        <button className="btn btn-primary btn-lg" onClick={() => { setNotice(null); setCreating(true); }}>+ Đề xuất Thu</button>
       </div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
@@ -349,13 +348,14 @@ export default function Page() {
 
       {open && <Detail row={open} recon={recon[open.id]} onClose={() => setOpen(null)} onChanged={load} onEdit={(r) => { setOpen(null); setEditRow(r); }} />}
 
-      {editRow && (
+      {(editRow || creating) && (
         <CollectionForm
           edit={editRow}
-          onClose={() => setEditRow(null)}
-          onSaved={({ no, failedPhotos }) => {
+          onClose={() => { setEditRow(null); setCreating(false); }}
+          onSaved={({ no, failedPhotos, edited }) => {
             setEditRow(null);
-            setNotice({ ok: !failedPhotos, text: `Đã lưu thay đổi phiếu Thu ${collectionCode(no)}.${failedPhotos ? ` Có ${failedPhotos} ảnh bill chưa xử lý được, hãy mở phiếu để kiểm tra.` : ''}` });
+            setCreating(false);
+            setNotice({ ok: !failedPhotos, text: `${edited ? 'Đã lưu thay đổi phiếu Thu' : 'Đã tạo đề xuất Thu'} ${collectionCode(no)}.${failedPhotos ? ` Có ${failedPhotos} ảnh bill chưa xử lý được, hãy mở phiếu để kiểm tra.` : ''}` });
             load();
           }}
         />

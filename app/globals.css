@@ -527,11 +527,6 @@ a.kpi:hover { border-color: #c5cfdf; box-shadow: 0 6px 16px rgba(11,37,69,.08); 
 @media (min-width: 901px) { .cus-table .c-act { width: 156px; } }
 
 /* ===== Thu tiền ===== */
-.fab { position: fixed; right: 28px; bottom: 28px; z-index: 90; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 22px; border: 0; border-radius: 99px; background: var(--orange); color: #1a0f05; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 0 10px 24px rgba(249, 115, 22, .45); transition: transform .15s ease, box-shadow .15s ease; }
-.fab:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(249, 115, 22, .5); }
-.fab:active { transform: scale(.97); }
-.toast { position: fixed; right: 28px; bottom: 96px; z-index: 300; max-width: min(420px, calc(100vw - 40px)); background: var(--ok); color: #fff; font-weight: 700; padding: 14px 18px; border-radius: 12px; box-shadow: var(--shadow); }
-.toast.bad { background: #b45309; }
 .label-like { font-weight: 600; font-size: .94rem; }
 .money-big { font-size: 1.25rem; font-weight: 800; color: var(--navy); }
 .bill-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -748,3 +743,24 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .fee-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
 .extras { display: grid; font-size: .74rem; font-weight: 600; color: var(--muted); line-height: 1.35; margin-top: 2px; white-space: nowrap; }
 .stop-list .stop-fee .extras { text-align: right; }
+
+/* ===== Bố cục cân đối theo kích thước màn hình ===== */
+/* Màn hình máy tính: nội dung co giãn theo chiều rộng, căn giữa, không dồn sang trái */
+@media (min-width: 961px) {
+  .admin-content { max-width: 2600px; margin-inline: auto; padding: 28px clamp(24px, 2.6vw, 64px) 96px; }
+}
+/* Tổng quan: các khối cao bằng nhau; ô cuối (Lịch 7 ngày) trải hết hàng, không nằm lẻ một bên */
+.dash-grid { align-items: stretch; }
+.dash-grid > .panel { display: flex; flex-direction: column; }
+@media (min-width: 1101px) {
+  .dash-grid > .panel:last-child { grid-column: 1 / -1; }
+}
+/* Màn hình rộng: 6 thẻ số liệu trên một hàng, 3 khối chi tiết trên một hàng */
+@media (min-width: 1700px) {
+  .kpis.kpis-dash { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+@media (min-width: 1900px) {
+  .dash-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dash-grid > .panel-wide { grid-column: 1 / -1; }
+  .dash-grid > .panel:last-child { grid-column: auto; }
+}

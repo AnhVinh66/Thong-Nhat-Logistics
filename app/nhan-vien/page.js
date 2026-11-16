@@ -146,7 +146,7 @@ export default function Page() {
 
       {err && <p className="err" role="alert">{err}</p>}
 
-      <div className="kpis">
+      <div className="kpis kpis-dash">
         <Kpi icon="route" label="Chuyến hôm nay" value={s?.todayOrders.length} sub={s && `${s.todayPoints} điểm giao`} />
         <Kpi icon="truck" label="Xe đang chạy" value={s && `${s.busyCount}/${s.fleet.length}`} sub={s && `${s.fleet.length - s.busyCount} xe rảnh`} tone="blue" href="/nhan-vien/xe/" />
         <Kpi icon="alert" label="Chưa gán xe / tài xế" value={s?.unassigned.length} sub="Chuyến từ hôm nay trở đi" tone={s?.unassigned.length ? 'warn' : 'ok'} />
