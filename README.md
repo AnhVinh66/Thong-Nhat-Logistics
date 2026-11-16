@@ -62,6 +62,8 @@ Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km t
 4. **Authentication → Users → Add user** để tạo tài khoản cho từng nhân viên (email + mật khẩu). Mọi nhân viên có quyền như nhau.
 5. **Project Settings → API**: copy *Project URL* và *anon public key* vào `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` khi chạy thử, GitHub *Variables* khi deploy).
 
+**Mặc định đã có sẵn trong mã** (`lib/supabase.js`): website luôn kết nối được dù GitHub Variables thiếu `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Hai biến này chỉ cần đặt khi muốn đổi sang dự án Supabase khác.
+
 Lưu ý: anon key là khoá công khai theo thiết kế của Supabase, an toàn nhờ bước 2 và 3. **Không** dùng `service_role` key trong dự án này. Nên bật sao lưu dữ liệu trong Supabase khi dùng thật.
 
 ## Đẩy lên GitHub
