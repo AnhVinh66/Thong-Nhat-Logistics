@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { supabase, vnd, orderCode } from '../../lib/supabase';
+import { supabase, vnd, orderCode, stopCode } from '../../lib/supabase';
 import Icon from '../../components/Icon';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -23,9 +23,9 @@ function pointsOf(o) {
   if (o.order_type === 'multi') {
     return [...(o.order_stops || [])]
       .sort((a, b) => a.position - b.position)
-      .map((s, i) => ({ key: `${o.id}|${s.id}`, name: s.customers?.name, address: s.address, no: i + 1 }));
+      .map((s, i) => ({ key: `${o.id}|${s.id}`, name: s.customers?.name, address: s.address, no: i + 1, code: stopCode(o.order_no, s.stop_no) }));
   }
-  return [{ key: `${o.id}|`, name: o.customers?.name, address: o.delivery, no: 1 }];
+  return [{ key: `${o.id}|`, name: o.customers?.name, address: o.delivery, no: 1, code: orderCode(o.order_no) }];
 }
 
 function Kpi({ icon, label, value, sub, tone = 'navy', href }) {
@@ -58,7 +58,7 @@ export default function Page() {
     const [o, v, p, c] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, fee, created_at, customers(name), order_stops(id, position, address, customers(name))')
+        .select('id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, fee, created_at, customers(name), order_stops(id, position, stop_no, address, customers(name))')
         .order('ship_date', { ascending: true }),
       supabase.from('vehicles').select('plate, payload_tons, volume_cbm').order('plate'),
       supabase.from('delivery_photos').select('order_id, stop_id, kind'),
@@ -243,7 +243,7 @@ export default function Page() {
             {s?.missingDocs.slice(0, 6).map(({ o, p }) => (
               <li key={p.key}>
                 <Link href={orderLink(o)}>
-                  <strong>{orderCode(o.order_no)}{p.no > 1 || o.order_type === 'multi' ? ` · Điểm ${p.no}` : ''}</strong>
+                  <strong>{p.code}</strong>
                   <span className="muted small">{dm(o.ship_date)} · {p.name || 'Điểm giao'} · {o.driver || 'chưa có tài xế'}</span>
                 </Link>
               </li>

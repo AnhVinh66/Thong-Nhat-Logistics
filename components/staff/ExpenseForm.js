@@ -6,6 +6,8 @@ import {
 } from '../../lib/supabase';
 import Modal from './Modal';
 import MoneyInput from './MoneyInput';
+import DateInput from '../DateInput';
+import TypePicker from './TypePicker';
 import { compress } from './DeliveryDocs';
 
 const todayISO = () => {
@@ -142,57 +144,53 @@ export default function ExpenseForm({ onClose, onSaved, edit = null }) {
           </div>
           <div className="field">
             <label htmlFor="e-date">Ngày chi *</label>
-            <input id="e-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <DateInput id="e-date" value={date} onChange={setDate} />
           </div>
         </div>
 
-        <div className="field">
-          <span className="label-like" id="e-type-l">Loại yêu cầu chi *</span>
-          <div className="type-chips" role="radiogroup" aria-labelledby="e-type-l">
-            {Object.entries(expenseTypes).map(([k, label]) => (
-              <button type="button" key={k} role="radio" aria-checked={type === k} className={type === k ? 'on' : ''} onClick={() => setType(k)}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {needsVehicle(type) && (
+        <div className="grid-2">
           <div className="field">
-            <label htmlFor="e-veh">Xe *</label>
-            <select id="e-veh" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-              <option value="">{vehicles === null ? 'Đang tải...' : 'Chọn xe trong danh sách xe'}</option>
+            <span className="label-like" id="e-type-l">Loại yêu cầu chi *</span>
+            <TypePicker id="e-type" value={type} onChange={setType} aria-labelledby="e-type-l" />
+          </div>
+          <div className="field">
+            <label htmlFor="e-veh">Xe{needsVehicle(type) ? ' *' : ''}</label>
+            <select id="e-veh" value={needsVehicle(type) ? vehicleId : ''} onChange={(e) => setVehicleId(e.target.value)} disabled={!needsVehicle(type)}>
+              <option value="">
+                {!needsVehicle(type) ? 'Chỉ chọn với chi bảo dưỡng / nhiên liệu' : vehicles === null ? 'Đang tải...' : 'Chọn xe trong danh sách xe'}
+              </option>
               {(vehicles || []).map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.plate}{v.payload_tons != null ? ` – ${Number(v.payload_tons)} tấn` : ''}{v.volume_cbm != null ? ` (${Number(v.volume_cbm)} CBM)` : ''}
                 </option>
               ))}
             </select>
-            {vehicles && vehicles.length === 0 && <p className="sum-warn small" style={{ margin: 0 }}>Chưa có xe nào. Hãy thêm xe ở mục <strong>Danh sách xe</strong> trước.</p>}
-          </div>
-        )}
-
-        <div className="field">
-          <span className="label-like" id="e-method-l">Hình thức *</span>
-          <div className="seg" role="radiogroup" aria-labelledby="e-method-l">
-            {[['cash', 'Tiền mặt'], ['transfer', 'Chuyển khoản']].map(([v, label]) => (
-              <button type="button" key={v} role="radio" aria-checked={method === v} className={method === v ? 'on' : ''} onClick={() => setMethod(v)}>
-                {label}
-              </button>
-            ))}
+            {needsVehicle(type) && vehicles && vehicles.length === 0 && <p className="sum-warn small" style={{ margin: 0 }}>Chưa có xe nào. Hãy thêm ở mục <strong>Danh sách xe</strong> trước.</p>}
           </div>
         </div>
 
-        {method === 'transfer' && (
+        <div className="grid-2">
           <div className="field">
-            <label htmlFor="e-bank">Ngân hàng chi tiền * <span className="muted small" style={{ color: 'var(--muted)' }}>(dùng để đối chiếu với sao kê)</span></label>
-            <select id="e-bank" value={bankId} onChange={(e) => setBankId(e.target.value)}>
-              <option value="">{banks === null ? 'Đang tải...' : 'Chọn ngân hàng'}</option>
+            <span className="label-like" id="e-method-l">Hình thức *</span>
+            <div className="seg seg-full" role="radiogroup" aria-labelledby="e-method-l">
+              {[['cash', 'Tiền mặt'], ['transfer', 'Chuyển khoản']].map(([v, label]) => (
+                <button type="button" key={v} role="radio" aria-checked={method === v} className={method === v ? 'on' : ''} onClick={() => setMethod(v)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="e-bank">Ngân hàng chi tiền{method === 'transfer' ? ' *' : ''}</label>
+            <select id="e-bank" value={method === 'transfer' ? bankId : ''} onChange={(e) => setBankId(e.target.value)} disabled={method !== 'transfer'}>
+              <option value="">
+                {method !== 'transfer' ? 'Chỉ chọn khi chuyển khoản' : banks === null ? 'Đang tải...' : 'Chọn ngân hàng (để đối chiếu sao kê)'}
+              </option>
               {(banks || []).map((b) => <option key={b.id} value={b.id}>{b.bank_name} · {b.account_number} – {b.account_name}</option>)}
             </select>
-            {banks && banks.length === 0 && <p className="sum-warn small" style={{ margin: 0 }}>Chưa có ngân hàng nào. Hãy thêm ở mục <strong>Giao dịch ngân hàng</strong> trước.</p>}
+            {method === 'transfer' && banks && banks.length === 0 && <p className="sum-warn small" style={{ margin: 0 }}>Chưa có ngân hàng nào. Hãy thêm ở mục <strong>Giao dịch ngân hàng</strong> trước.</p>}
           </div>
-        )}
+        </div>
 
         <div className="field">
           <label htmlFor="e-content">Giải trình về nội dung đề xuất chi *</label>

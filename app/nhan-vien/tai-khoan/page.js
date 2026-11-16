@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { supabase, displayLogin } from '../../../lib/supabase';
+import { supabase, displayLogin, fmtDateTime } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
 
 const roleLabel = { staff: 'Văn phòng', driver: 'Lái xe' };
@@ -154,7 +154,7 @@ export default function Page() {
                 <td><strong>{r.full_name || '—'}</strong>{r.user_id === me && <span className="muted small"> (bạn)</span>}</td>
                 <td>{displayLogin(r.email)}</td>
                 <td>{r.role ? roleLabel[r.role] : <span className="err" style={{ fontSize: '.9rem' }}>Chưa phân quyền</span>}</td>
-                <td className="muted small">{r.last_sign_in_at ? new Date(r.last_sign_in_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'Chưa đăng nhập'}</td>
+                <td className="muted small">{r.last_sign_in_at ? fmtDateTime(r.last_sign_in_at) : 'Chưa đăng nhập'}</td>
                 <td className="actions">
                   <button className="btn btn-outline sm" onClick={() => {
                     setEditMsg(null);

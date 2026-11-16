@@ -690,3 +690,40 @@ a.kpi:hover { border-color: #c5cfdf; box-shadow: 0 6px 16px rgba(11,37,69,.08); 
 .exp-step.now { border-color: var(--orange); box-shadow: 0 0 0 2px rgba(249,115,22,.18); }
 .exp-step.now .exp-dot { background: var(--orange); color: #1a0f05; }
 .bk-ref.out { color: #dc2626; }
+
+/* ===== Mã đơn con của điểm trả ===== */
+.stop-list.coded { list-style: none; padding-left: 0; }
+.stop-code { display: inline-block; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .78rem; font-weight: 800; color: var(--navy); background: #e8eef7; border: 1px solid #cdd8ea; border-radius: 6px; padding: 1px 7px; margin-right: 8px; white-space: nowrap; }
+.stop-card legend .stop-code { margin-left: 8px; margin-right: 0; }
+.stop-list.coded li { gap: 4px 0; }
+
+/* ===== Ô ngày dd/mm/yyyy ===== */
+.date-field { position: relative; display: block; width: 100%; }
+.date-field > input[type=text] { padding-right: 44px; width: 100%; }
+.date-cal { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.date-cal:hover:not(:disabled) { background: var(--soft); color: var(--navy); }
+.date-native { position: absolute; right: 4px; top: 0; width: 38px; height: 100%; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+.date-filter { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.date-filter .date-field { width: 168px; }
+
+/* ===== Form Đề xuất Chi: bố cục đều, pop up chọn loại chi ===== */
+.seg.seg-full { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.seg.seg-full button { min-height: 46px; padding: 0 12px; }
+select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; }
+.tp { position: relative; }
+.tp-trigger { width: 100%; min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; font: inherit; padding: 11px 14px; border: 1.5px solid #c5cfdf; border-radius: 10px; background: #fff; color: var(--text); cursor: pointer; }
+.tp-trigger.empty { color: #7b8aa0; }
+.tp-trigger:hover { border-color: #9fb0c8; }
+.tp-trigger[aria-expanded=true] { border-color: var(--orange); outline: 3px solid rgba(249, 115, 22, .25); }
+.tp-pop { position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 6px); background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 40px rgba(11, 37, 69, .22); padding: 8px; }
+.tp-search { width: 100%; margin-bottom: 6px; min-height: 40px; }
+.tp-list { max-height: 300px; overflow-y: auto; display: grid; gap: 2px; }
+.tp-list li { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+.tp-list li.active { background: #fff3e8; }
+.tp-list li.chosen strong { color: var(--orange-d); }
+.tp-main { display: grid; flex: 1; min-width: 0; }
+.tp-main strong { font-size: .95rem; }
+.tp-main small { color: var(--muted); font-size: .78rem; }
+.tp-tag { font-size: .7rem; font-weight: 800; color: #1e40af; background: #e6f0ff; border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+.tp-check { color: var(--orange-d); font-weight: 900; }
+.tp-none { color: var(--muted); padding: 12px 10px; cursor: default !important; }

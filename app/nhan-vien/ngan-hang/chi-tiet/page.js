@@ -6,6 +6,7 @@ import { supabase, commas, customerCode, collectionCode, expenseCode } from '../
 import { fmtTime, buildMatcher } from '../../../../lib/bank';
 import Icon from '../../../../components/Icon';
 import Modal from '../../../../components/staff/Modal';
+import DateInput from '../../../../components/DateInput';
 import StatementUpload from '../../../../components/staff/StatementUpload';
 
 const PAGE = 50;
@@ -206,8 +207,8 @@ export default function Page() {
           <option value="matched">Đã khớp (lệnh Thu / phiếu chi)</option>
           <option value="unmatched">Chưa khớp</option>
         </select>
-        <label className="date-filter">Từ <input type="date" value={from} onChange={resetPage(setFrom)} /></label>
-        <label className="date-filter">Đến <input type="date" value={to} onChange={resetPage(setTo)} /></label>
+        <span className="date-filter">Từ <DateInput aria-label="Từ ngày" value={from} onChange={(v) => { setFrom(v); setPage(0); }} /></span>
+        <span className="date-filter">Đến <DateInput aria-label="Đến ngày" value={to} onChange={(v) => { setTo(v); setPage(0); }} /></span>
       </div>
 
       {err && !err.startsWith('Không tìm thấy') && <p className="err" role="alert">{err}</p>}

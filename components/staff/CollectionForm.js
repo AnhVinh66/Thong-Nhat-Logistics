@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  supabase, vnd, orderCode, customerCode, collectionCode, commas, displayLogin, BILLS_BUCKET,
+  supabase, vnd, orderCode, stopCode, customerCode, collectionCode, commas, displayLogin, BILLS_BUCKET,
 } from '../../lib/supabase';
 import Modal from './Modal';
+import DateInput from '../DateInput';
 import MoneyInput from './MoneyInput';
 import { compress } from './DeliveryDocs';
 
@@ -53,7 +54,7 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
   const loadOrders = useCallback(
     async (cid) => {
       setLoadingOrders(true);
-      const cols = 'id, order_no, order_type, pickup, delivery, ship_date, fee, order_stops(customer_id, address, fee)';
+      const cols = 'id, order_no, order_type, pickup, delivery, ship_date, fee, order_stops(customer_id, address, fee, stop_no)';
       const [a, b, it] = await Promise.all([
         supabase.from('orders').select(cols).eq('customer_id', cid),
         supabase.from('order_stops').select('order_id').eq('customer_id', cid),
@@ -78,6 +79,9 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
           id: o.id,
           order_no: o.order_no,
           ship_date: o.ship_date,
+          code: isMulti && mine.length
+            ? [...mine].sort((a, b) => a.stop_no - b.stop_no).map((s) => stopCode(o.order_no, s.stop_no)).join(', ')
+            : orderCode(o.order_no),
           route: isMulti ? `${o.pickup} → ${mine.map((s) => s.address).join('; ')}` : `${o.pickup} → ${o.delivery}`,
           fee,
           paid,
@@ -185,8 +189,8 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
     for (const o of orders) {
       if (sel[o.id] === undefined) continue;
       const a = Number(sel[o.id] || 0);
-      if (!(a > 0)) return setErr(`Đơn ${orderCode(o.order_no)}: vui lòng nhập số tiền thu.`);
-      if (a > o.remaining) return setErr(`Đơn ${orderCode(o.order_no)}: số tiền thu vượt quá số còn thiếu (${vnd(o.remaining)}).`);
+      if (!(a > 0)) return setErr(`Đơn ${o.code}: vui lòng nhập số tiền thu.`);
+      if (a > o.remaining) return setErr(`Đơn ${o.code}: số tiền thu vượt quá số còn thiếu (${vnd(o.remaining)}).`);
       items.push({ order_id: o.id, amount: a });
     }
     if (allocated > amt) return setErr(`Tổng tiền các đơn (${vnd(allocated)}) lớn hơn số tiền thu (${vnd(amt)}).`);
@@ -316,7 +320,7 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
         </div>
 
         <div className="grid-2">
-          <div className="field"><label htmlFor="c-date">Ngày thu tiền *</label><input id="c-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div className="field"><label htmlFor="c-date">Ngày thu tiền *</label><DateInput id="c-date" value={date} onChange={setDate} /></div>
           <div className="field"><label htmlFor="c-content">Nội dung thu</label><input id="c-content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="VD: Thu tiền cước tháng 11" /></div>
         </div>
 
@@ -379,9 +383,9 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
                     return (
                       <tr key={o.id} className={`${on ? 'on' : ''} ${done ? 'done' : ''}`}>
                         <td>
-                          <input type="checkbox" checked={on} disabled={done} onChange={(e) => toggle(o, e.target.checked)} aria-label={`Chọn đơn ${orderCode(o.order_no)}`} />
+                          <input type="checkbox" checked={on} disabled={done} onChange={(e) => toggle(o, e.target.checked)} aria-label={`Chọn đơn ${o.code}`} />
                         </td>
-                        <td><strong>{orderCode(o.order_no)}</strong><div className="muted small">{dm(o.ship_date)}</div></td>
+                        <td><strong>{o.code}</strong><div className="muted small">{dm(o.ship_date)}</div></td>
                         <td className="route">{o.route}</td>
                         <td className="num">{commas(o.fee)}</td>
                         <td className="num">{commas(o.paid)}</td>
@@ -393,7 +397,7 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
                               onChange={(v) => setSel((s) => ({ ...s, [o.id]: v }))}
                               disabled={!on}
                               placeholder={done ? '' : commas(o.remaining)}
-                              aria-label={`Số tiền thu cho đơn ${orderCode(o.order_no)}`}
+                              aria-label={`Số tiền thu cho đơn ${o.code}`}
                             />
                             <button type="button" className="fill-btn" disabled={!on} onClick={() => setSel((s) => ({ ...s, [o.id]: String(o.remaining) }))} title="Điền đủ số còn thiếu">Đủ</button>
                           </div>

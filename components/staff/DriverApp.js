@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, orderCode } from '../../lib/supabase';
+import { supabase, orderCode, stopCode } from '../../lib/supabase';
 import Icon from '../Icon';
 import DeliveryDocs, { uploadDocs } from './DeliveryDocs';
 import InstallApp from './InstallApp';
@@ -19,12 +19,12 @@ function pointsOf(o) {
     return [...(o.order_stops || [])]
       .sort((a, b) => a.position - b.position)
       .map((s, i) => ({
-        key: `${o.id}|${s.id}`, stopId: s.id, no: i + 1,
+        key: `${o.id}|${s.id}`, stopId: s.id, no: i + 1, code: stopCode(o.order_no, s.stop_no),
         name: s.customers?.name, phone: s.customers?.phone, address: s.address, cargo: s.cargo, weight: s.weight,
       }));
   }
   return [{
-    key: `${o.id}|`, stopId: null, no: 1,
+    key: `${o.id}|`, stopId: null, no: 1, code: orderCode(o.order_no),
     name: o.customers?.name, phone: o.customers?.phone, address: o.delivery, cargo: o.cargo, weight: o.weight,
   }];
 }
@@ -69,7 +69,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
     setLoading(true);
     const { data, error } = await supabase
       .from('orders')
-      .select('id, order_no, order_type, pickup, delivery, cargo, weight, plate, truck, ship_date, customers(name, phone), order_stops(id, position, address, cargo, weight, customers(name, phone))')
+      .select('id, order_no, order_type, pickup, delivery, cargo, weight, plate, truck, ship_date, customers(name, phone), order_stops(id, position, stop_no, address, cargo, weight, customers(name, phone))')
       .order('ship_date', { ascending: true, nullsFirst: false });
     if (error) setErr('Không tải được danh sách chuyến. Bấm "Tải lại danh sách" bên dưới hoặc báo văn phòng.');
     else {
@@ -160,7 +160,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
                 return (
                   <section className={`drv-point ${done ? 'done' : ''}`} key={p.key}>
                     <div className="drv-point-head">
-                      <span className="drv-no">{points.length > 1 ? `Điểm ${p.no}` : 'Điểm giao'}</span>
+                      <span className="drv-no">{points.length > 1 ? p.code : 'Điểm giao'}</span>
                       {done && <span className="drv-done"><Icon name="check" size={16} /> Đủ chứng từ</span>}
                     </div>
                     <p className="drv-cus">{p.name}</p>
@@ -184,7 +184,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
                     </div>
                     {(c.bien_ban > 0 || c.bill > 0) && (
                       <button className="drv-view" onClick={() => setDocsFor({
-                        orderId: o.id, stopId: p.stopId, title: `${orderCode(o.order_no)} · ${p.name || 'Điểm giao'}`,
+                        orderId: o.id, stopId: p.stopId, title: `${p.code} · ${p.name || 'Điểm giao'}`,
                       })}>
                         <Icon name="image" size={18} /> Xem ảnh đã chụp
                       </button>

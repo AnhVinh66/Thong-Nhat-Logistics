@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  supabase, vnd, expenseCode, expenseTypes, expenseStatus, needsVehicle, methodLabel, displayLogin, EXPENSE_BUCKET, commas,
+  supabase, vnd, expenseCode, expenseTypes, expenseStatus, needsVehicle, methodLabel, displayLogin, EXPENSE_BUCKET, commas, fmtDateTime,
 } from '../../../lib/supabase';
 import { fmtTime } from '../../../lib/bank';
 import Modal from '../../../components/staff/Modal';
+import DateInput from '../../../components/DateInput';
 import ExpenseForm from '../../../components/staff/ExpenseForm';
 import { compress } from '../../../components/staff/DeliveryDocs';
 
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
-const stamp = (ts) => (ts ? new Date(ts).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : '');
+const stamp = fmtDateTime;
 const hm = (ts) => (ts ? new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '');
 const reconMark = { ok: '✓', bad: '✕', na: '–' };
 
@@ -304,8 +305,8 @@ export default function Page() {
           <option value="ok">✓ Đã khớp sao kê</option>
           <option value="bad">✕ Chưa khớp sao kê</option>
         </select>
-        <label className="date-filter">Từ <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-        <label className="date-filter">Đến <input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+        <span className="date-filter">Từ <DateInput aria-label="Từ ngày" value={from} onChange={setFrom} /></span>
+        <span className="date-filter">Đến <DateInput aria-label="Đến ngày" value={to} onChange={setTo} /></span>
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}

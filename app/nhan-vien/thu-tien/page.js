@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  supabase, vnd, orderCode, customerCode, collectionCode, methodLabel, BILLS_BUCKET, commas,
+  supabase, vnd, orderCode, stopCode, customerCode, collectionCode, methodLabel, BILLS_BUCKET, commas, fmtDateTime,
 } from '../../../lib/supabase';
 import { fmtTime } from '../../../lib/bank';
 import Modal from '../../../components/staff/Modal';
+import DateInput from '../../../components/DateInput';
 import { compress } from '../../../components/staff/DeliveryDocs';
 import CollectionForm from '../../../components/staff/CollectionForm';
 
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
-const stamp = (ts) => (ts ? new Date(ts).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : '');
+const stamp = fmtDateTime;
 
 // Trạng thái đối soát của một lệnh Thu: ok (tích xanh) / bad (X đỏ) / na (tiền mặt, không áp dụng)
 function reconOf(r, cands, banks) {
@@ -44,6 +45,17 @@ function reconOf(r, cands, banks) {
 }
 
 const reconMark = { ok: '✓', bad: '✕', na: '–' };
+
+// Mã hiển thị của một dòng phân bổ: đơn 1 điểm = DH0004; đơn nhiều điểm = mã con của các điểm trả thuộc khách (DH0004-1, DH0004-3)
+const itemCode = (i, customerId) => {
+  const o = i.orders;
+  if (!o) return '';
+  if (o.order_type === 'multi') {
+    const mine = (o.order_stops || []).filter((s) => s.customer_id === customerId).sort((a, b) => a.stop_no - b.stop_no);
+    if (mine.length) return mine.map((s) => stopCode(o.order_no, s.stop_no)).join(', ');
+  }
+  return orderCode(o.order_no);
+};
 
 function Detail({ row, recon, onClose, onChanged, onEdit }) {
   const [photos, setPhotos] = useState([]);
@@ -123,7 +135,7 @@ function Detail({ row, recon, onClose, onChanged, onEdit }) {
           <thead><tr><th>Đơn hàng</th><th className="num">Số tiền thu</th></tr></thead>
           <tbody>
             {items.map((i) => (
-              <tr key={i.id || i.order_id}><td><strong>{orderCode(i.orders?.order_no)}</strong></td><td className="num">{vnd(i.amount)}</td></tr>
+              <tr key={i.id || i.order_id}><td><strong>{itemCode(i, row.customer_id)}</strong></td><td className="num">{vnd(i.amount)}</td></tr>
             ))}
           </tbody>
           <tfoot>
@@ -185,7 +197,7 @@ export default function Page() {
     setLoading(true);
     const { data, error } = await supabase
       .from('collections')
-      .select('*, customers(customer_no, name), bank_accounts(bank_name, account_number), bank_transactions(txn_time, has_time, amount, description), collection_items(id, order_id, amount, orders(order_no)), collection_photos(id)')
+      .select('*, customers(customer_no, name), bank_accounts(bank_name, account_number), bank_transactions(txn_time, has_time, amount, description), collection_items(id, order_id, amount, orders(order_no, order_type, order_stops(customer_id, stop_no))), collection_photos(id)')
       .order('collected_on', { ascending: false })
       .order('collection_no', { ascending: false });
     if (error) setErr('Không tải được danh sách Thu. Hãy chạy supabase/collections.sql trên Supabase.');
@@ -223,7 +235,7 @@ export default function Page() {
       if (to && r.collected_on > to) return false;
       if (!s) return true;
       const hay = [collectionCode(r.collection_no), customerCode(r.customers?.customer_no), r.customers?.name, r.content, r.created_by_name,
-        ...(r.collection_items || []).map((i) => orderCode(i.orders?.order_no))];
+        ...(r.collection_items || []).map((i) => itemCode(i, r.customer_id))];
       return hay.some((v) => (v || '').toLowerCase().includes(s));
     });
   }, [rows, q, method, from, to, rec, recon]);
@@ -271,8 +283,8 @@ export default function Page() {
           <option value="ok">✓ Đã khớp sao kê</option>
           <option value="bad">✕ Chưa khớp sao kê</option>
         </select>
-        <label className="date-filter">Từ <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-        <label className="date-filter">Đến <input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+        <span className="date-filter">Từ <DateInput aria-label="Từ ngày" value={from} onChange={setFrom} /></span>
+        <span className="date-filter">Đến <DateInput aria-label="Đến ngày" value={to} onChange={setTo} /></span>
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
@@ -300,7 +312,7 @@ export default function Page() {
               <td>
                 {r.content || <span className="muted">—</span>}
                 {r.collection_items?.length > 0 && (
-                  <div className="muted small">{r.collection_items.map((i) => `${orderCode(i.orders?.order_no)}: ${vnd(i.amount)}`).join(' · ')}</div>
+                  <div className="muted small">{r.collection_items.map((i) => `${itemCode(i, r.customer_id)}: ${vnd(i.amount)}`).join(' · ')}</div>
                 )}
               </td>
               <td className="w-method">

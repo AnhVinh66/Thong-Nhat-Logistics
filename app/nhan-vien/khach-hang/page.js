@@ -1,11 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, customerTypes, vnd, customerCode } from '../../../lib/supabase';
+import { supabase, customerTypes, vnd, customerCode, fmtDate } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
 
 const blank = { name: '', phone: '', email: '', address: '', company: '', tax_code: '', type: 'le', note: '' };
-const dmy = (ts) => (ts ? new Date(ts).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
+const dmy = fmtDate;
 
 // Công nợ theo khách = tổng cước các đơn của khách − tiền đã thu theo phiếu Thu.
 // Đơn 1 điểm: cước của đơn; đơn nhiều điểm: cước của từng điểm trả thuộc khách đó.

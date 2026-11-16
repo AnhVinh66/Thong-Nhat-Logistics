@@ -1,9 +1,10 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, vnd, orderCode } from '../../../lib/supabase';
+import { supabase, vnd, orderCode, stopCode } from '../../../lib/supabase';
 import { drivers as defaultDrivers } from '../../../lib/site';
 import Modal from '../../../components/staff/Modal';
+import DateInput from '../../../components/DateInput';
 import DeliveryDocs, { removeDocFiles } from '../../../components/staff/DeliveryDocs';
 
 const blankStop = { customer_id: '', address: '', cargo: '', weight: '', fee: '' };
@@ -29,6 +30,7 @@ export default function Page() {
   const [editing, setEditing] = useState(null);
   const [formErr, setFormErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null);
   const [photoCounts, setPhotoCounts] = useState({}); // "orderId|stopId" -> số ảnh
   const [docsFor, setDocsFor] = useState(null); // { orderId, stopId, title }
 
@@ -101,7 +103,7 @@ export default function Page() {
     if (!s) return rows;
     return rows.filter((r) => {
       const fields = [orderCode(r.order_no), r.customers?.name, r.pickup, r.delivery, r.cargo, r.plate, r.driver];
-      sortedStops(r).forEach((st) => fields.push(st.customers?.name, st.address, st.cargo));
+      sortedStops(r).forEach((st) => fields.push(stopCode(r.order_no, st.stop_no), st.customers?.name, st.address, st.cargo));
       return fields.some((v) => (v || '').toLowerCase().includes(s));
     });
   }, [rows, q]);
@@ -144,6 +146,7 @@ export default function Page() {
     if (!r) return setEditing({ ...blank, stops: [{ ...blankStop }, { ...blankStop }] });
     const stops = sortedStops(r).map((st) => ({
       id: st.id,
+      stop_no: st.stop_no,
       customer_id: st.customer_id,
       address: st.address,
       cargo: st.cargo || '',
@@ -218,19 +221,27 @@ export default function Page() {
     };
 
     let failed = false;
+    let doneMsg = null;
     if (!editing.id) {
-      const ins = await supabase.from('orders').insert(payload).select('id').single();
+      const ins = await supabase.from('orders').insert(payload).select('id, order_no').single();
       if (ins.error) failed = true;
       else if (multi) {
-        const s = await supabase.from('order_stops').insert(stops.map((st) => ({ ...st, order_id: ins.data.id })));
+        // Database tự cấp số hiệu 1, 2, 3... cho từng điểm trả theo đúng thứ tự gửi lên
+        const s = await supabase.from('order_stops').insert(stops.map((st) => ({ ...st, order_id: ins.data.id }))).select('stop_no');
         if (s.error) {
           await supabase.from('orders').delete().eq('id', ins.data.id); // hoàn tác để không để lại đơn dở dang
           failed = true;
+        } else {
+          const codes = (s.data || []).map((x) => x.stop_no).sort((a, b) => a - b).map((n) => stopCode(ins.data.order_no, n));
+          doneMsg = `Đã tạo ${orderCode(ins.data.order_no)} gồm ${codes.join(', ')}.`;
         }
+      } else {
+        doneMsg = `Đã tạo ${orderCode(ins.data.order_no)}.`;
       }
     } else if (!multi) {
       const up = await supabase.from('orders').update(payload).eq('id', editing.id);
       failed = !!up.error;
+      if (!failed) doneMsg = `Đã lưu ${orderCode(editing.order_no)}.`;
     } else {
       // Giữ nguyên mã các điểm trả đã có (để không mất ảnh chứng từ gắn với điểm đó):
       // cập nhật điểm cũ, thêm điểm mới, cập nhật đơn, cuối cùng mới xoá các điểm đã bỏ.
@@ -243,14 +254,17 @@ export default function Page() {
         }
       }
       const fresh = withIds.filter((x) => !x.id).map(({ id, ...f }) => ({ ...f, order_id: editing.id }));
+      let newCodes = [];
       if (!failed && fresh.length) {
-        const s = await supabase.from('order_stops').insert(fresh);
+        const s = await supabase.from('order_stops').insert(fresh).select('stop_no');
         if (s.error) failed = true;
+        else newCodes = (s.data || []).map((x) => x.stop_no).sort((a, b) => a - b).map((n) => stopCode(editing.order_no, n));
       }
       if (!failed) {
         const up = await supabase.from('orders').update(payload).eq('id', editing.id);
         failed = !!up.error;
       }
+      if (!failed) doneMsg = `Đã lưu ${orderCode(editing.order_no)}.${newCodes.length ? ` Điểm trả mới: ${newCodes.join(', ')}.` : ''}`;
       if (!failed) {
         const kept = withIds.map((x) => x.id).filter(Boolean);
         const removed = editing.oldStopIds.filter((id) => !kept.includes(id));
@@ -268,6 +282,7 @@ export default function Page() {
       );
     }
     setEditing(null);
+    if (doneMsg) setNotice({ ok: true, text: doneMsg });
     load();
   }
 
@@ -333,6 +348,7 @@ export default function Page() {
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
+      {notice && <p className="ok-msg" role="status" style={{ marginBottom: 10 }}>{notice.text}</p>}
       <div className="table-wrap">
         <table className="fleet-table staff-table">
           <thead>
@@ -378,19 +394,20 @@ export default function Page() {
                     <tr className="stops-row">
                       <td></td>
                       <td colSpan={7}>
-                        <ol className="stop-list">
-                          {stops.map((st, i) => (
+                        <ol className="stop-list coded">
+                          {stops.map((st) => (
                             <li key={st.id}>
                               <button
                                 className={`btn sm stop-docs ${photoCounts[`${r.id}|${st.id}`] ? 'btn-docs-has' : 'btn-docs'}`}
                                 onClick={() => setDocsFor({
                                   orderId: r.id,
                                   stopId: st.id,
-                                  title: `Chứng từ – ${orderCode(r.order_no)} · Điểm #${i + 1} (${st.customers?.name || ''})`,
+                                  title: `Chứng từ – ${stopCode(r.order_no, st.stop_no)} (${st.customers?.name || ''})`,
                                 })}
                               >
                                 Chứng từ ({photoCounts[`${r.id}|${st.id}`] || 0})
                               </button>
+                              <span className="stop-code">{stopCode(r.order_no, st.stop_no)}</span>
                               <strong>{st.customers?.name}</strong>
                               <span className="muted"> ({st.customers?.phone})</span> – {st.address}
                               {(st.cargo || st.weight) && <span className="muted"> · {[st.cargo, st.weight].filter(Boolean).join(', ')}</span>}
@@ -501,10 +518,10 @@ export default function Page() {
             </div>
 
             {multi ? (
-              <div className="field"><label htmlFor="o-date">Ngày vận chuyển</label><input id="o-date" type="date" value={editing.ship_date || ''} onChange={setField('ship_date')} /></div>
+              <div className="field"><label htmlFor="o-date">Ngày vận chuyển</label><DateInput id="o-date" value={editing.ship_date || ''} onChange={(v) => setEditing((s) => ({ ...s, ship_date: v }))} /></div>
             ) : (
               <div className="grid-2">
-                <div className="field"><label htmlFor="o-date">Ngày vận chuyển</label><input id="o-date" type="date" value={editing.ship_date || ''} onChange={setField('ship_date')} /></div>
+                <div className="field"><label htmlFor="o-date">Ngày vận chuyển</label><DateInput id="o-date" value={editing.ship_date || ''} onChange={(v) => setEditing((s) => ({ ...s, ship_date: v }))} /></div>
                 <div className="field"><label htmlFor="o-fee">Cước phí (đồng)</label><input id="o-fee" type="number" min="0" inputMode="numeric" value={editing.fee} onChange={setField('fee')} /></div>
               </div>
             )}
@@ -516,7 +533,10 @@ export default function Page() {
                 </div>
                 {editing.stops.map((st, i) => (
                   <fieldset className="stop-card" key={i}>
-                    <legend>Điểm trả #{i + 1}</legend>
+                    <legend>
+                      Điểm trả #{i + 1}
+                      {editing.id && st.stop_no ? <span className="stop-code">{stopCode(editing.order_no, st.stop_no)}</span> : <span className="muted small"> · mã đơn con cấp khi lưu</span>}
+                    </legend>
                     <div className="field">
                       <label htmlFor={`s-cus-${i}`}>Khách hàng *</label>
                       <select id={`s-cus-${i}`} value={st.customer_id} onChange={setStop(i, 'customer_id')}>{customerOptions}</select>

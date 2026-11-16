@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, fmtDateTime } from '../../lib/supabase';
 import Modal from './Modal';
 
 export const DOCS_BUCKET = 'delivery-docs';
@@ -81,12 +81,12 @@ function KindSection({ kind, photos, urls, busy, onUpload, onDelete }) {
               {urls[p.path] ? (
                 <a href={urls[p.path]} target="_blank" rel="noopener noreferrer" aria-label={`Mở ảnh ${kind.label} cỡ lớn`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={urls[p.path]} alt={`${kind.label} – ${new Date(p.created_at).toLocaleString('vi-VN')}`} loading="lazy" />
+                  <img src={urls[p.path]} alt={`${kind.label} – ${fmtDateTime(p.created_at)}`} loading="lazy" />
                 </a>
               ) : (
                 <div className="thumb-ph">Đang tải...</div>
               )}
-              <span className="thumb-date">{new Date(p.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</span>
+              <span className="thumb-date">{fmtDateTime(p.created_at)}</span>
               <button type="button" className="thumb-del" onClick={() => onDelete(p)} aria-label="Xoá ảnh này">✕</button>
             </li>
           ))}
