@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { supabase, commas, customerCode } from '../../../../lib/supabase';
+import { supabase, commas, customerCode, collectionCode, expenseCode } from '../../../../lib/supabase';
 import { fmtTime, buildMatcher } from '../../../../lib/bank';
 import Icon from '../../../../components/Icon';
 import Modal from '../../../../components/staff/Modal';
@@ -120,8 +120,9 @@ export default function Page() {
     if (tab !== 'all') query = query.eq('direction', tab);
     if (fromIso) query = query.gte('txn_time', fromIso);
     if (toIso) query = query.lt('txn_time', toIso);
-    if (status === 'matched') query = query.not('customer_id', 'is', null);
-    if (status === 'unmatched') query = query.is('customer_id', null);
+    // Trạng thái theo lệnh Thu: Đã khớp = có lệnh Thu gắn vào dòng sao kê; Chưa khớp chỉ tính tiền vào
+    if (status === 'matched') query = query.or('collection_id.not.is.null,expense_id.not.is.null');
+    if (status === 'unmatched') query = query.is('collection_id', null).is('expense_id', null);
     if (q) query = query.ilike('description', `%${q.replace(/[%_]/g, (m) => `\\${m}`)}%`);
     query = query.order('txn_time', { ascending: false }).order('seq', { ascending: false }).order('id').range(page * PAGE, page * PAGE + PAGE - 1);
 
@@ -187,7 +188,7 @@ export default function Page() {
           <p className="muted" style={{ margin: 0 }}>{bank?.account_name}</p>
         </div>
         <div className="dash-actions">
-          <button className="btn btn-outline" onClick={rematch} title="Thử khớp lại các giao dịch chưa khớp với khách hàng hiện có">Khớp lại tự động</button>
+          <button className="btn btn-outline" onClick={rematch} title="Thử gắn lại khách hàng cho các giao dịch chưa có khách (theo mã KH, MST, tên trong nội dung)">Khớp lại khách hàng</button>
           <button className="btn btn-primary" onClick={() => setUpload(true)} disabled={!bank}>Tải sao kê</button>
         </div>
       </div>
@@ -202,7 +203,7 @@ export default function Page() {
         <input aria-label="Tìm theo nội dung" placeholder="Tìm theo nội dung giao dịch..." value={qInput} onChange={(e) => setQInput(e.target.value)} />
         <select aria-label="Trạng thái" value={status} onChange={resetPage(setStatus)}>
           <option value="all">Mọi trạng thái</option>
-          <option value="matched">Hợp lệ (đã khớp khách)</option>
+          <option value="matched">Đã khớp (lệnh Thu / phiếu chi)</option>
           <option value="unmatched">Chưa khớp</option>
         </select>
         <label className="date-filter">Từ <input type="date" value={from} onChange={resetPage(setFrom)} /></label>
@@ -242,13 +243,34 @@ export default function Page() {
                   <td className="c-time"><span className="bk-clock"><Icon name="clock" size={13} /></span>{ft.date} <strong>{ft.time}</strong></td>
                   <td className="c-amt"><span className={pos ? 'amt-in' : 'amt-out'}>{pos ? '+ ' : '- '}{commas(Math.abs(t.amount))}</span> <span className="vnd">VNĐ</span></td>
                   <td className="c-status">
-                    <button className={`bk-pill ${t.customer_id ? 'ok' : 'bad'}`} onClick={() => setAssign(t)} title={cus ? `${labelOf(cus)} – bấm để đổi` : 'Bấm để gán khách hàng'}>
-                      <span aria-hidden="true">●</span> {t.customer_id ? 'Hợp lệ' : 'Chưa khớp'}
-                    </button>
+                    {t.collection_id || t.expense_id ? (
+                      <>
+                        <span
+                          className="bk-pill ok"
+                          title={t.collection_id
+                            ? `Đã khớp lệnh Thu ${collectionCode(t.collection_no)}. Dòng sao kê này không thể khớp lệnh khác.`
+                            : `Đã khớp phiếu chi ${expenseCode(t.expense_no)}. Dòng sao kê này không thể khớp phiếu khác.`}
+                        >
+                          <span aria-hidden="true">●</span> Đã khớp
+                        </span>
+                        <span className={`bk-ref ${t.expense_id ? 'out' : ''}`}>{t.collection_id ? collectionCode(t.collection_no) : expenseCode(t.expense_no)}</span>
+                      </>
+                    ) : (
+                      <span
+                        className="bk-pill bad"
+                        title={pos ? 'Chưa có lệnh Thu nào đúng ngân hàng, số tiền và ngày với dòng sao kê này' : 'Chưa có phiếu chi nào đúng ngân hàng, số tiền và ngày với dòng sao kê này'}
+                      >
+                        <span aria-hidden="true">●</span> Chưa khớp
+                      </span>
+                    )}
                   </td>
                   <td className="c-desc">
                     {t.description}
-                    {cus && <span className="bk-cus">{labelOf(cus)}</span>}
+                    {cus ? (
+                      <button type="button" className="bk-cus bk-cus-btn" onClick={() => setAssign(t)} title="Bấm để đổi khách hàng">{labelOf(cus)}</button>
+                    ) : pos ? (
+                      <button type="button" className="bk-assign" onClick={() => setAssign(t)}>+ Gán khách hàng</button>
+                    ) : null}
                   </td>
                   <td className="c-hash">{t.hash_code}</td>
                   <td className="c-bal">{t.balance === null ? <span className="muted">—</span> : <>{commas(t.balance)}<span className="vnd">VNĐ</span></>}</td>

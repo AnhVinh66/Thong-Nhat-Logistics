@@ -138,6 +138,7 @@ const sections = [
     title: 'Tài chính',
     links: [
       { href: '/nhan-vien/thu-tien/', label: 'Thu tiền', icon: 'money' },
+      { href: '/nhan-vien/chi-tien/', label: 'Chi tiền', icon: 'out' },
       { href: '/nhan-vien/ngan-hang/', label: 'Giao dịch ngân hàng', icon: 'bank' },
     ],
   },

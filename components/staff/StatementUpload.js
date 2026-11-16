@@ -125,6 +125,7 @@ export default function StatementUpload({ bank, onClose, onDone }) {
       }));
       let inserted = 0;
       let matched = 0;
+      const newIds = [];
       for (let i = 0; i < payload.length; i += BATCH) {
         setProgress(`Đang lưu ${Math.min(i + BATCH, payload.length)}/${payload.length} giao dịch...`);
         // Trùng (cùng tài khoản, cùng ngày giờ phút giây, cùng số tiền) sẽ bị bỏ qua, không báo lỗi
@@ -134,6 +135,7 @@ export default function StatementUpload({ bank, onClose, onDone }) {
           .select('id, customer_id');
         if (r.error) throw r.error;
         inserted += r.data.length;
+        r.data.forEach((x) => newIds.push(x.id));
         matched += r.data.filter((x) => x.customer_id).length;
       }
       // Nhớ cách đọc file của ngân hàng này cho lần tải sau
@@ -145,7 +147,14 @@ export default function StatementUpload({ bank, onClose, onDone }) {
       });
       if (names.time) await supabase.from('bank_accounts').update({ statement_mapping: { names } }).eq('id', bank.id);
 
-      const res = { inserted, duplicates: payload.length - inserted, invalid: parsed.invalid, matched };
+      // Database tự gắn dòng sao kê mới cho lệnh Thu đang chờ; đếm xem có bao nhiêu lệnh Thu vừa được khớp
+      let collections = 0;
+      for (let i = 0; i < newIds.length; i += 200) {
+        const c = await supabase.from('collections').select('id', { count: 'exact', head: true }).in('bank_transaction_id', newIds.slice(i, i + 200));
+        if (!c.error) collections += c.count || 0;
+      }
+
+      const res = { inserted, duplicates: payload.length - inserted, invalid: parsed.invalid, matched, collections };
       setResult(res);
       onDone?.(res);
     } catch (e) {
@@ -167,7 +176,8 @@ export default function StatementUpload({ bank, onClose, onDone }) {
           <p style={{ margin: 0, fontSize: '1.05rem' }}><strong>{commas(result.inserted)}</strong> giao dịch mới đã được thêm vào <strong>{bank.bank_name}</strong>.</p>
           <ul className="up-result">
             <li>Bỏ qua <strong>{commas(result.duplicates)}</strong> giao dịch đã có từ trước (trùng ngày giờ và số tiền).</li>
-            <li><strong>{commas(result.matched)}</strong> giao dịch mới tự khớp được với khách hàng.</li>
+            <li><strong>{commas(result.collections || 0)}</strong> lệnh Thu vừa được khớp với sao kê (tích xanh).</li>
+            <li><strong>{commas(result.matched)}</strong> giao dịch mới tự gắn được khách hàng.</li>
             {result.invalid > 0 && <li className="sum-warn"><strong>{result.invalid}</strong> dòng không đọc được ngày giờ nên bị bỏ qua.</li>}
           </ul>
         </div>

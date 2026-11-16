@@ -634,3 +634,59 @@ a.kpi:hover { border-color: #c5cfdf; box-shadow: 0 6px 16px rgba(11,37,69,.08); 
 .nowrap { white-space: nowrap; }
 
 .admin-content { padding-bottom: 96px; }
+
+/* ===== Đối soát lệnh Thu với sao kê ===== */
+.col-table .w-recon { width: 74px; text-align: center; }
+.recon-btn { width: 34px; height: 34px; border-radius: 50%; border: 2px solid; font: inherit; font-size: 1.05rem; font-weight: 900; line-height: 1; cursor: pointer; display: inline-grid; place-items: center; transition: transform .12s ease; }
+.recon-btn:hover { transform: scale(1.1); }
+.recon-btn.recon-ok { color: #fff; background: #16a34a; border-color: #16a34a; }
+.recon-btn.recon-bad { color: #fff; background: #dc2626; border-color: #dc2626; }
+.recon-btn.recon-na { color: #8a96ab; background: #f1f4f8; border-color: #d5dce8; font-weight: 700; }
+.recon-box { display: flex; gap: 12px; align-items: flex-start; border-radius: 12px; padding: 12px 14px; margin-top: 14px; border: 1px solid; }
+.recon-box p { font-size: .9rem; }
+.recon-icon { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; color: #fff; flex: none; }
+.recon-box.recon-ok { background: #f1fcf5; border-color: #86d9a6; }
+.recon-box.recon-ok .recon-icon { background: #16a34a; }
+.recon-box.recon-bad { background: #fef3f3; border-color: #f3a9a9; }
+.recon-box.recon-bad .recon-icon { background: #dc2626; }
+.recon-box.recon-na { background: var(--soft); border-color: var(--line); }
+.recon-box.recon-na .recon-icon { background: #8a96ab; }
+
+.bk-pill.na { color: #9aa6ba; border-color: #e1e6ef; background: #f6f8fb; cursor: default; }
+.bk-ref { display: block; margin-top: 3px; font-size: .72rem; font-weight: 700; color: #16a34a; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.bk-cus-btn { border: 0; background: transparent; padding: 0; font: inherit; font-size: .74rem; font-weight: 700; color: var(--orange-d); cursor: pointer; text-align: left; }
+.bk-cus-btn:hover { text-decoration: underline; }
+.bk-assign { display: block; margin-top: 3px; border: 0; background: transparent; padding: 0; font: inherit; font-size: .74rem; font-weight: 600; color: #2563eb; cursor: pointer; }
+.bk-assign:hover { text-decoration: underline; }
+
+/* ===== Chi tiền ===== */
+.exp-table .x-time { width: 118px; }
+.exp-table .x-recon { width: 92px; text-align: center; }
+.exp-table th.x-recon { white-space: normal; line-height: 1.2; }
+.exp-table .x-purpose { width: 150px; }
+.exp-table .x-method { width: 124px; }
+.exp-table .x-amt { width: 128px; text-align: right; white-space: nowrap; }
+.exp-table .x-status { width: 116px; }
+.exp-table .x-by { width: 90px; }
+.exp-table .x-act { width: 196px; }
+.exp-table .x-act .actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.exp-table .x-content { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; border-top: 0; }
+.exp-table td.x-content { display: table-cell; }
+.exp-table td.x-content { overflow: visible; }
+.st-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.st-pending { background: #fff4e0; color: #92400e; }
+.st-approved { background: #e6f0ff; color: #1e40af; }
+.st-paid { background: #e7f8ee; color: #166534; }
+.type-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.type-chips button { font: inherit; font-weight: 600; font-size: .92rem; min-height: 44px; padding: 0 16px; border: 1.5px solid #c5cfdf; border-radius: 10px; background: #fff; color: var(--navy); cursor: pointer; }
+.type-chips button:hover { border-color: var(--orange); }
+.type-chips button.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.exp-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.exp-step { display: grid; gap: 2px; justify-items: start; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; color: var(--muted); }
+.exp-step small { font-size: .74rem; }
+.exp-dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: .75rem; font-weight: 900; background: var(--soft); color: var(--muted); }
+.exp-step.done { border-color: #86d9a6; background: #f6fdf8; color: var(--text); }
+.exp-step.done .exp-dot { background: #16a34a; color: #fff; }
+.exp-step.now { border-color: var(--orange); box-shadow: 0 0 0 2px rgba(249,115,22,.18); }
+.exp-step.now .exp-dot { background: var(--orange); color: #1a0f05; }
+.bk-ref.out { color: #dc2626; }

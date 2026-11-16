@@ -33,6 +33,8 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
   const [customer, setCustomer] = useState(null);
   const [amount, setAmount] = useState(edit ? String(edit.amount) : '');
   const [method, setMethod] = useState(edit ? edit.method : '');
+  const [bankId, setBankId] = useState(edit?.bank_account_id || '');
+  const [banks, setBanks] = useState(null); // null = đang tải
   const [date, setDate] = useState(edit ? edit.collected_on : todayISO());
   const [content, setContent] = useState(edit?.content || '');
   const [files, setFiles] = useState([]); // ảnh mới: [{ file, url }]
@@ -99,6 +101,11 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
   );
 
   useEffect(() => {
+    supabase
+      .from('bank_accounts')
+      .select('id, bank_name, account_number, account_name')
+      .order('bank_name')
+      .then(({ data }) => setBanks(data || []));
     supabase
       .from('customers')
       .select('id, customer_no, name, phone')
@@ -170,6 +177,7 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
     setErr('');
     if (!(amt > 0)) return setErr('Vui lòng nhập số tiền thu.');
     if (!method) return setErr('Vui lòng chọn hình thức thanh toán.');
+    if (method === 'transfer' && !bankId) return setErr('Vui lòng chọn ngân hàng nhận tiền.');
     if (!customer) return setErr('Vui lòng chọn khách hàng (hoặc nhập mã KH).');
     if (!date) return setErr('Vui lòng chọn ngày thu tiền.');
 
@@ -195,6 +203,7 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
       const r = await supabase.rpc('update_collection', {
         p_id: editId, p_customer: customer.id, p_amount: amt, p_method: method, p_date: date,
         p_content: content.trim() || null, p_items: items, p_by: by,
+        p_bank: method === 'transfer' ? bankId : null,
       });
       if (r.error) {
         setBusy(false);
@@ -202,14 +211,17 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
           r.error.code === 'P0001'
             ? r.error.message
             : r.error.code === 'PGRST202'
-              ? 'Chưa bật tính năng sửa. Hãy chạy lại supabase/collections.sql trên Supabase.'
+              ? 'Chưa bật tính năng chọn ngân hàng. Hãy chạy supabase/reconcile.sql trên Supabase.'
               : 'Không lưu được thay đổi. Vui lòng thử lại.'
         );
       }
     } else {
       const ins = await supabase
         .from('collections')
-        .insert({ customer_id: customer.id, amount: amt, method, collected_on: date, content: content.trim() || null, created_by_name: by })
+        .insert({
+          customer_id: customer.id, amount: amt, method, collected_on: date, content: content.trim() || null, created_by_name: by,
+          bank_account_id: method === 'transfer' ? bankId : null,
+        })
         .select('id, collection_no')
         .single();
       if (ins.error) {
@@ -273,6 +285,21 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
             </div>
           </div>
         </div>
+
+        {method === 'transfer' && (
+          <div className="field">
+            <label htmlFor="c-bank">Ngân hàng nhận tiền * <span className="muted small" style={{ color: 'var(--muted)' }}>(dùng để đối soát với sao kê)</span></label>
+            <select id="c-bank" value={bankId} onChange={(e) => setBankId(e.target.value)}>
+              <option value="">{banks === null ? 'Đang tải...' : 'Chọn ngân hàng'}</option>
+              {(banks || []).map((b) => (
+                <option key={b.id} value={b.id}>{b.bank_name} · {b.account_number} – {b.account_name}</option>
+              ))}
+            </select>
+            {banks && banks.length === 0 && (
+              <p className="sum-warn small" style={{ margin: 0 }}>Chưa có ngân hàng nào. Hãy thêm tài khoản ở mục <strong>Giao dịch ngân hàng</strong> trước.</p>
+            )}
+          </div>
+        )}
 
         <div className="field">
           <label htmlFor="c-cus">Khách hàng * <span className="muted small" style={{ color: 'var(--muted)' }}>(chọn trong danh sách hoặc nhập mã KH)</span></label>

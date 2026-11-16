@@ -104,7 +104,7 @@ create policy "read roles" on public.staff_roles
 do $$
 declare t text;
 begin
-  foreach t in array array['customers', 'orders', 'order_stops', 'vehicles', 'pickup_points', 'delivery_photos', 'collections', 'collection_items', 'collection_photos', 'bank_accounts', 'bank_transactions'] loop
+  foreach t in array array['customers', 'orders', 'order_stops', 'vehicles', 'pickup_points', 'delivery_photos', 'collections', 'collection_items', 'collection_photos', 'bank_accounts', 'bank_transactions', 'expenses', 'expense_photos'] loop
     if to_regclass('public.' || t) is not null then
       execute format('drop policy if exists "staff full access" on public.%I', t);
       execute format('drop policy if exists "staff all" on public.%I', t);

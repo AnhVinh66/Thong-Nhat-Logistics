@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  supabase, vnd, orderCode, customerCode, collectionCode, methodLabel, BILLS_BUCKET,
+  supabase, vnd, orderCode, customerCode, collectionCode, methodLabel, BILLS_BUCKET, commas,
 } from '../../../lib/supabase';
+import { fmtTime } from '../../../lib/bank';
 import Modal from '../../../components/staff/Modal';
 import { compress } from '../../../components/staff/DeliveryDocs';
 import CollectionForm from '../../../components/staff/CollectionForm';
@@ -11,7 +12,40 @@ import CollectionForm from '../../../components/staff/CollectionForm';
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
 const stamp = (ts) => (ts ? new Date(ts).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : '');
 
-function Detail({ row, onClose, onChanged, onEdit }) {
+// Trạng thái đối soát của một lệnh Thu: ok (tích xanh) / bad (X đỏ) / na (tiền mặt, không áp dụng)
+function reconOf(r, cands, banks) {
+  if (r.method !== 'transfer') return { state: 'na', text: 'Tiền mặt: không đối soát với sao kê ngân hàng.' };
+  if (r.bank_transaction_id) {
+    const t = r.bank_transactions;
+    const ft = t ? fmtTime(t.txn_time, t.has_time) : null;
+    return {
+      state: 'ok',
+      text: `Đã khớp dòng sao kê ${r.bank_accounts?.bank_name || ''}${ft ? ` · ${ft.date}${ft.time ? ' ' + ft.time : ''}` : ''} · + ${commas(r.amount)} VNĐ`,
+      txn: t,
+    };
+  }
+  if (!r.bank_account_id) return { state: 'bad', text: 'Chưa chọn ngân hàng. Bấm Sửa để chọn ngân hàng nhận tiền.' };
+  const day = (c) => fmtTime(c.txn_time).date;
+  const want = dmy(r.collected_on);
+  const same = cands.filter((c) => Number(c.amount) === Number(r.amount));
+  const sameBank = same.filter((c) => c.bank_account_id === r.bank_account_id);
+  if (sameBank.some((c) => day(c) === want)) {
+    return { state: 'bad', text: 'Có dòng sao kê cùng ngân hàng, số tiền, ngày nhưng đã được lệnh Thu khác sử dụng (mỗi dòng sao kê chỉ khớp một lệnh Thu).' };
+  }
+  if (sameBank.length) {
+    const days = [...new Set(sameBank.map(day))].slice(0, 3).join(', ');
+    return { state: 'bad', text: `Có dòng sao kê cùng ngân hàng và số tiền nhưng khác ngày (${days}). Hãy sửa ngày thu cho đúng.` };
+  }
+  if (same.length) {
+    const names = [...new Set(same.map((c) => banks[c.bank_account_id]?.bank_name).filter(Boolean))].join(', ');
+    return { state: 'bad', text: `Có dòng sao kê cùng số tiền nhưng ở ngân hàng khác (${names}). Hãy sửa ngân hàng.` };
+  }
+  return { state: 'bad', text: 'Chưa có dòng sao kê nào đúng ngân hàng, số tiền và ngày. Hãy tải sao kê ngân hàng hoặc kiểm tra lại thông tin phiếu.' };
+}
+
+const reconMark = { ok: '✓', bad: '✕', na: '–' };
+
+function Detail({ row, recon, onClose, onChanged, onEdit }) {
   const [photos, setPhotos] = useState([]);
   const [urls, setUrls] = useState({});
   const [busy, setBusy] = useState(false);
@@ -66,12 +100,22 @@ function Detail({ row, onClose, onChanged, onEdit }) {
       <dl className="detail">
         <div><dt>Khách hàng</dt><dd><strong>{customerCode(row.customers?.customer_no)} – {row.customers?.name}</strong></dd></div>
         <div><dt>Số tiền thu</dt><dd><strong className="debt-has" style={{ color: 'var(--ok)' }}>{vnd(row.amount)}</strong></dd></div>
-        <div><dt>Hình thức</dt><dd>{methodLabel[row.method]}</dd></div>
+        <div><dt>Hình thức</dt><dd>{methodLabel[row.method]}{row.bank_accounts ? ` · ${row.bank_accounts.bank_name} ${row.bank_accounts.account_number}` : ''}</dd></div>
         <div><dt>Ngày thu tiền</dt><dd>{dmy(row.collected_on)}</dd></div>
         <div><dt>Nội dung</dt><dd>{row.content || '—'}</dd></div>
         <div><dt>Người tạo</dt><dd>{row.created_by_name || '—'} · {stamp(row.created_at)}</dd></div>
         {row.updated_at && <div><dt>Sửa lần cuối</dt><dd>{row.updated_by_name || '—'} · {stamp(row.updated_at)}</dd></div>}
       </dl>
+
+      {recon && (
+        <div className={`recon-box recon-${recon.state}`} role="status">
+          <span className="recon-icon" aria-hidden="true">{reconMark[recon.state]}</span>
+          <div>
+            <strong>{recon.state === 'ok' ? 'Đã khớp sao kê' : recon.state === 'bad' ? 'Chưa khớp sao kê' : 'Không áp dụng'}</strong>
+            <p style={{ margin: '2px 0 0' }}>{recon.text}</p>
+          </div>
+        </div>
+      )}
 
       <h3 style={{ margin: '16px 0 8px' }}>Đơn hàng đã thu</h3>
       {items.length ? (
@@ -133,18 +177,31 @@ export default function Page() {
   const [open, setOpen] = useState(null);
   const [editRow, setEditRow] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [rec, setRec] = useState('');
+  const [cands, setCands] = useState([]);
+  const [banks, setBanks] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('collections')
-      .select('*, customers(customer_no, name), collection_items(id, order_id, amount, orders(order_no)), collection_photos(id)')
+      .select('*, customers(customer_no, name), bank_accounts(bank_name, account_number), bank_transactions(txn_time, has_time, amount, description), collection_items(id, order_id, amount, orders(order_no)), collection_photos(id)')
       .order('collected_on', { ascending: false })
       .order('collection_no', { ascending: false });
     if (error) setErr('Không tải được danh sách Thu. Hãy chạy supabase/collections.sql trên Supabase.');
     else {
       setErr('');
       setRows(data || []);
+      // Dữ liệu để giải thích vì sao lệnh Thu chưa khớp (dòng sao kê cùng số tiền, tên ngân hàng)
+      const need = (data || []).filter((r) => r.method === 'transfer' && !r.bank_transaction_id);
+      const [c, b] = await Promise.all([
+        need.length
+          ? supabase.from('bank_transactions').select('id, bank_account_id, amount, txn_time').in('amount', [...new Set(need.map((r) => r.amount))]).limit(3000)
+          : Promise.resolve({ data: [] }),
+        supabase.from('bank_accounts').select('id, bank_name'),
+      ]);
+      setCands(c.data || []);
+      setBanks(Object.fromEntries((b.data || []).map((x) => [x.id, x])));
     }
     setLoading(false);
   }, []);
@@ -155,10 +212,13 @@ export default function Page() {
     return () => window.removeEventListener('collection-saved', load);
   }, [load]);
 
+  const recon = useMemo(() => Object.fromEntries(rows.map((r) => [r.id, reconOf(r, cands, banks)])), [rows, cands, banks]);
+
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
     return rows.filter((r) => {
       if (method && r.method !== method) return false;
+      if (rec && recon[r.id]?.state !== rec) return false;
       if (from && r.collected_on < from) return false;
       if (to && r.collected_on > to) return false;
       if (!s) return true;
@@ -166,7 +226,7 @@ export default function Page() {
         ...(r.collection_items || []).map((i) => orderCode(i.orders?.order_no))];
       return hay.some((v) => (v || '').toLowerCase().includes(s));
     });
-  }, [rows, q, method, from, to]);
+  }, [rows, q, method, from, to, rec, recon]);
 
   const total = useMemo(() => {
     const t = { all: 0, cash: 0, transfer: 0 };
@@ -206,6 +266,11 @@ export default function Page() {
           <option value="cash">Tiền mặt</option>
           <option value="transfer">Chuyển khoản</option>
         </select>
+        <select aria-label="Đối soát sao kê" value={rec} onChange={(e) => setRec(e.target.value)}>
+          <option value="">Mọi đối soát</option>
+          <option value="ok">✓ Đã khớp sao kê</option>
+          <option value="bad">✕ Chưa khớp sao kê</option>
+        </select>
         <label className="date-filter">Từ <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
         <label className="date-filter">Đến <input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
       </div>
@@ -220,6 +285,7 @@ export default function Page() {
             <th>Khách hàng</th>
             <th>Nội dung / Đơn hàng</th>
             <th className="w-method">Hình thức</th>
+            <th className="w-recon">Đối soát</th>
             <th className="c-debt">Số tiền</th>
             <th className="w-bill">Bill</th>
             <th className="c-act c-act3"><span className="sr-only">Thao tác</span></th>
@@ -237,7 +303,22 @@ export default function Page() {
                   <div className="muted small">{r.collection_items.map((i) => `${orderCode(i.orders?.order_no)}: ${vnd(i.amount)}`).join(' · ')}</div>
                 )}
               </td>
-              <td className="w-method"><span className={`pill ${r.method === 'cash' ? 'pill-ok' : 'pill-blue'}`}>{methodLabel[r.method]}</span></td>
+              <td className="w-method">
+                <span className={`pill ${r.method === 'cash' ? 'pill-ok' : 'pill-blue'}`}>{methodLabel[r.method]}</span>
+                {r.bank_accounts && <div className="muted small">{r.bank_accounts.bank_name}</div>}
+              </td>
+              <td className="w-recon">
+                {recon[r.id] && (
+                  <button
+                    className={`recon-btn recon-${recon[r.id].state}`}
+                    onClick={() => setOpen(r)}
+                    title={recon[r.id].text}
+                    aria-label={recon[r.id].state === 'ok' ? 'Đã khớp sao kê' : recon[r.id].state === 'bad' ? `Chưa khớp sao kê. ${recon[r.id].text}` : 'Tiền mặt, không đối soát với sao kê'}
+                  >
+                    {reconMark[recon[r.id].state]}
+                  </button>
+                )}
+              </td>
               <td className="c-debt"><strong style={{ color: 'var(--ok)' }}>{vnd(r.amount)}</strong></td>
               <td className="w-bill">{r.collection_photos?.length ? `${r.collection_photos.length} ảnh` : <span className="muted">—</span>}</td>
               <td className="c-act c-act3">
@@ -249,12 +330,12 @@ export default function Page() {
               </td>
             </tr>
           ))}
-          {!loading && !shown.length && <tr><td colSpan={8} className="muted">Chưa có phiếu Thu nào.</td></tr>}
-          {loading && <tr><td colSpan={8} className="muted">Đang tải...</td></tr>}
+          {!loading && !shown.length && <tr><td colSpan={9} className="muted">Chưa có phiếu Thu nào.</td></tr>}
+          {loading && <tr><td colSpan={9} className="muted">Đang tải...</td></tr>}
         </tbody>
       </table>
 
-      {open && <Detail row={open} onClose={() => setOpen(null)} onChanged={load} onEdit={(r) => { setOpen(null); setEditRow(r); }} />}
+      {open && <Detail row={open} recon={recon[open.id]} onClose={() => setOpen(null)} onChanged={load} onEdit={(r) => { setOpen(null); setEditRow(r); }} />}
 
       {editRow && (
         <CollectionForm

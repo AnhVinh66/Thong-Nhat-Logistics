@@ -59,6 +59,8 @@ Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km t
 3g. **Tạo tài khoản ngay trên website**: chạy `supabase/simple-users.sql` (sau `driver-role.sql`). Từ đó vào **Nhân viên → Tài khoản** nhập Họ tên, Tên đăng nhập, Mật khẩu, Vai trò là xong; không cần email. Đăng nhập bằng tên đăng nhập (VD `trang`).
 3h. **Thu tiền** (nút Đề xuất Thu, bảng Thu, mã khách hàng KH0001...): chạy `supabase/collections.sql` (đã có trong `schema.sql` bản hiện tại). File này tự nhận vai trò nếu đã chạy `driver-role.sql`.
 3i. **Giao dịch ngân hàng** (thêm tài khoản, tải sao kê .xlsx/.csv, chống trùng, mã Hash): chạy `supabase/bank.sql` (đã có trong `schema.sql` bản hiện tại). File này tự nhận vai trò nếu đã chạy `driver-role.sql`.
+3j. **Đối soát lệnh Thu với sao kê** (chọn ngân hàng trong Đề xuất Thu, tích xanh / X đỏ, trạng thái Đã khớp của sao kê): chạy `supabase/reconcile.sql` SAU `collections.sql` và `bank.sql` (đã có trong `schema.sql` bản hiện tại).
+3k. **Chi tiền** (Đề xuất Chi, duyệt Chờ duyệt → Đã duyệt → Đã thanh toán, ảnh hoá đơn, đối chiếu sao kê tiền ra): chạy `supabase/expenses.sql` SAU `vehicles.sql`, `bank.sql`, `reconcile.sql` (đã có trong `schema.sql` bản hiện tại). Nếu sau này chạy lại `reconcile.sql` thì phải chạy lại `expenses.sql`.
 4. **Authentication → Users → Add user** để tạo tài khoản cho từng nhân viên (email + mật khẩu). Mọi nhân viên có quyền như nhau.
 5. **Project Settings → API**: copy *Project URL* và *anon public key* vào `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` khi chạy thử, GitHub *Variables* khi deploy).
 

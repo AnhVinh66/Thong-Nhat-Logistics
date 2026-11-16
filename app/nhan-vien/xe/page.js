@@ -85,7 +85,7 @@ export default function Page() {
   async function remove(r) {
     if (!window.confirm(`Xoá xe ${r.plate}? Thao tác này không thể hoàn tác.`)) return;
     const { error } = await supabase.from('vehicles').delete().eq('id', r.id);
-    if (error) return window.alert('Không xoá được. Vui lòng thử lại.');
+    if (error) return window.alert(error.code === '23503' ? 'Không xoá được: xe này đã có phiếu chi (bảo dưỡng / nhiên liệu). Hãy xoá các phiếu chi liên quan trước.' : 'Không xoá được. Vui lòng thử lại.');
     load();
   }
 
