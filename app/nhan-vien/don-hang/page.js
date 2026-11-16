@@ -275,7 +275,13 @@ export default function Page() {
     if (!window.confirm(`Xoá đơn hàng ${orderCode(r.order_no)} và toàn bộ ảnh chứng từ của đơn? Thao tác này không thể hoàn tác.`)) return;
     await removeDocFiles({ orderId: r.id });
     const { error } = await supabase.from('orders').delete().eq('id', r.id);
-    if (error) return window.alert('Không xoá được. Vui lòng thử lại.');
+    if (error) {
+      return window.alert(
+        error.code === '23503'
+          ? 'Không xoá được: đơn hàng này đã có phiếu Thu. Hãy xoá phiếu Thu liên quan ở mục Thu tiền trước.'
+          : 'Không xoá được. Vui lòng thử lại.'
+      );
+    }
     load();
   }
 

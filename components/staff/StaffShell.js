@@ -8,6 +8,7 @@ import Logo from '../Logo';
 import Icon from '../Icon';
 import DriverApp from './DriverApp';
 import InstallApp, { useServiceWorker } from './InstallApp';
+import CollectionForm from './CollectionForm';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -131,6 +132,7 @@ const sections = [
     links: [
       { href: '/nhan-vien/', label: 'Tổng quan', icon: 'grid' },
       { href: '/nhan-vien/don-hang/', label: 'Đơn hàng', icon: 'route' },
+      { href: '/nhan-vien/thu-tien/', label: 'Thu tiền', icon: 'money' },
     ],
   },
   {
@@ -149,6 +151,8 @@ const sections = [
 // Bố cục quản trị: menu cố định bên trái (máy tính), thu gọn thành nút ☰ (điện thoại)
 function AdminLayout({ pathname, login, onLogout, children }) {
   const [open, setOpen] = useState(false);
+  const [showCollect, setShowCollect] = useState(false);
+  const [toast, setToast] = useState(null);
   const isActive = (h) => (h === '/nhan-vien/' ? pathname.replace(/\/$/, '') === '/nhan-vien' : pathname.startsWith(h));
   const current = sections.flatMap((s) => s.links).find((l) => isActive(l.href));
 
@@ -210,6 +214,37 @@ function AdminLayout({ pathname, login, onLogout, children }) {
         </header>
         <main className="admin-content">{children}</main>
       </div>
+
+      <button type="button" className="fab" onClick={() => setShowCollect(true)}>
+        <Icon name="money" size={20} /> Đề xuất Thu
+      </button>
+
+      {showCollect && (
+        <CollectionForm
+          onClose={() => setShowCollect(false)}
+          onSaved={({ no, failedPhotos }) => {
+            setShowCollect(false);
+            setToast({
+              ok: !failedPhotos,
+              text: `Đã tạo đề xuất Thu PT${String(no).padStart(4, "0")}${failedPhotos ? `, nhưng ${failedPhotos} ảnh bill chưa tải được. Hãy mở phiếu để gắn lại.` : "."}`,
+            });
+            window.dispatchEvent(new Event("collection-saved"));
+          }}
+        />
+      )}
+      {toast && <Toast toast={toast} onDone={() => setToast(null)} />}
+    </div>
+  );
+}
+
+function Toast({ toast, onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 5000);
+    return () => clearTimeout(t);
+  }, [toast, onDone]);
+  return (
+    <div className={`toast ${toast.ok ? "" : "bad"}`} role="status">
+      {toast.text}
     </div>
   );
 }

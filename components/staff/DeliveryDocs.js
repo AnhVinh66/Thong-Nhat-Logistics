@@ -21,7 +21,7 @@ export async function removeDocFiles({ orderId, stopIds }) {
 }
 
 // Thu nhỏ ảnh (cạnh dài tối đa 1600px, JPEG) để tải nhanh và tiết kiệm dung lượng
-async function compress(file) {
+export async function compress(file) {
   try {
     const bmp = await createImageBitmap(file);
     const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));

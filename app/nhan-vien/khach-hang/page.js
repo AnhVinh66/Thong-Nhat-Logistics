@@ -1,24 +1,32 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, customerTypes, vnd } from '../../../lib/supabase';
+import { supabase, customerTypes, vnd, customerCode } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
 
 const blank = { name: '', phone: '', email: '', address: '', company: '', tax_code: '', type: 'le', note: '' };
 const dmy = (ts) => (ts ? new Date(ts).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
 
-// Công nợ theo khách: đơn 1 điểm lấy công nợ của đơn; đơn nhiều điểm lấy cước của từng điểm trả thuộc khách đó
-function debtByCustomer(orders) {
+// Công nợ theo khách = tổng cước các đơn của khách − tiền đã thu theo phiếu Thu.
+// Đơn 1 điểm: cước của đơn; đơn nhiều điểm: cước của từng điểm trả thuộc khách đó.
+function debtByCustomer(orders, paidItems) {
   const m = {};
+  const row = (id) => (m[id] = m[id] || { fee: 0, paid: 0, debt: 0, orders: new Set() });
   const add = (id, v, orderId) => {
     if (!id) return;
-    m[id] = m[id] || { debt: 0, orders: new Set() };
-    m[id].debt += Number(v || 0);
-    m[id].orders.add(orderId);
+    row(id).fee += Number(v || 0);
+    row(id).orders.add(orderId);
   };
   orders.forEach((o) => {
     if (o.order_type === 'multi') (o.order_stops || []).forEach((s) => add(s.customer_id, s.fee, o.id));
-    else add(o.customer_id, o.debt ?? o.fee, o.id);
+    else add(o.customer_id, o.fee, o.id);
+  });
+  (paidItems || []).forEach((i) => {
+    const cid = i.collections?.customer_id;
+    if (cid) row(cid).paid += Number(i.amount || 0);
+  });
+  Object.values(m).forEach((r) => {
+    r.debt = r.fee - r.paid;
   });
   return m;
 }
@@ -37,16 +45,17 @@ export default function Page() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [c, o] = await Promise.all([
+    const [c, o, p] = await Promise.all([
       supabase.from('customers').select('*').order('created_at', { ascending: false }),
-      supabase.from('orders').select('id, order_type, customer_id, fee, debt, order_stops(customer_id, fee)'),
+      supabase.from('orders').select('id, order_type, customer_id, fee, order_stops(customer_id, fee)'),
+      supabase.from('collection_items').select('amount, collections(customer_id)'),
     ]);
     if (c.error) setErr('Không tải được danh sách khách hàng.');
     else {
       setErr('');
       setRows(c.data);
     }
-    if (!o.error) setDebts(debtByCustomer(o.data || []));
+    if (!o.error) setDebts(debtByCustomer(o.data || [], p.error ? [] : p.data));
     setLoading(false);
   }, []);
 
@@ -59,7 +68,7 @@ export default function Page() {
     const list = rows.filter(
       (r) =>
         (!type || r.type === type) &&
-        (!s || [r.name, r.phone, r.email, r.company, r.tax_code, r.address].some((v) => (v || '').toLowerCase().includes(s)))
+        (!s || [r.name, r.phone, r.email, r.company, r.tax_code, r.address, customerCode(r.customer_no)].some((v) => (v || '').toLowerCase().includes(s)))
     );
     const debtOf = (r) => debts[r.id]?.debt || 0;
     return [...list].sort((a, b) => {
@@ -79,7 +88,7 @@ export default function Page() {
       return;
     }
     setBusy(true);
-    const { id, created_at, ...fields } = editing;
+    const { id, created_at, customer_no, ...fields } = editing;
     const clean = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]));
     const { error } = id
       ? await supabase.from('customers').update(clean).eq('id', id)
@@ -110,7 +119,7 @@ export default function Page() {
   const set = (k) => (e) => setEditing((s) => ({ ...s, [k]: e.target.value }));
   const openEdit = (r) => {
     setFormErr('');
-    const { created_at, ...rest } = r || {};
+    const { created_at, customer_no, ...rest } = r || {};
     setEditing(r ? { ...blank, ...rest } : { ...blank });
   };
 
@@ -122,7 +131,7 @@ export default function Page() {
       </div>
 
       <div className="toolbar">
-        <input aria-label="Tìm kiếm" placeholder="Tìm theo tên, SĐT, công ty, MST..." value={q} onChange={(e) => setQ(e.target.value)} />
+        <input aria-label="Tìm kiếm" placeholder="Tìm theo mã KH, tên, SĐT, công ty, MST..." value={q} onChange={(e) => setQ(e.target.value)} />
         <select aria-label="Lọc theo loại khách" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">Tất cả loại khách</option>
           {Object.entries(customerTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -156,6 +165,7 @@ export default function Page() {
                 <td className="c-date" data-label="Ngày tạo"><div>{dmy(r.created_at)}</div></td>
                 <td data-label="Khách hàng">
                   <div>
+                    <span className="cus-code">{customerCode(r.customer_no)}</span>
                     <strong className="c-name">{r.name}</strong>
                     <span className={`pill pill-type-${r.type}`}>{customerTypes[r.type]}</span>
                     {r.note && <div className="muted small c-note">{r.note}</div>}
@@ -177,7 +187,7 @@ export default function Page() {
                 <td className="c-debt" data-label="Công nợ">
                   <div>
                     <strong className={d?.debt ? 'debt-has' : 'debt-zero'}>{vnd(d?.debt || 0)}</strong>
-                    {d && <div className="muted small">{d.orders.size} đơn</div>}
+                    {d && <div className="muted small">{d.orders.size} đơn{d.paid > 0 ? ` · đã thu ${vnd(d.paid)}` : ''}</div>}
                   </div>
                 </td>
                 <td className="c-act">

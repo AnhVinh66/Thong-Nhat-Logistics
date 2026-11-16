@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-export default function Modal({ title, onClose, children }) {
+export default function Modal({ title, onClose, children, width }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
@@ -15,7 +15,7 @@ export default function Modal({ title, onClose, children }) {
 
   return (
     <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="modal" role="dialog" aria-modal="true" aria-label={title} style={width ? { width: `min(${width}px, 100%)` } : undefined}>
         <div className="modal-head">
           <h2>{title}</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Đóng">✕</button>
