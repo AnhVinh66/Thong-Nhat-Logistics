@@ -502,6 +502,20 @@ a.kpi:hover { border-color: #c5cfdf; box-shadow: 0 6px 16px rgba(11,37,69,.08); 
 .pill-type-dai_ly { background: #f3e8ff; color: #6b21a8; margin-top: 4px; }
 .debt-has { color: var(--err); font-size: 1rem; }
 .debt-zero { color: var(--muted); font-weight: 600; }
+.debt-ok { color: #166534; }
+.detail-btn { margin-top: 8px; }
+
+/* Bảng chi tiết đơn hàng của từng khách */
+.cus-table tbody tr.cus-detail-row td, .cus-table tbody tr.cus-detail-row:hover td { background: var(--soft); padding: 14px 16px 18px; }
+.cus-detail-box { display: grid; gap: 14px; }
+.cus-sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.cus-sum > div { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: grid; gap: 2px; }
+.cus-sum strong { font-size: 1.05rem; }
+.cus-detail-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); }
+.cus-detail-table th { background: #e8eef7; color: var(--navy); font-size: .8rem; text-align: left; padding: 9px 10px; }
+.cus-detail-table td { padding: 9px 10px; border-top: 1px solid var(--line); font-size: .9rem; vertical-align: top; }
+.cus-detail-table .num { text-align: right; white-space: nowrap; }
+.cus-detail-table tfoot td { background: var(--soft); border-top: 2px solid var(--line); }
 
 /* Màn hình hẹp: mỗi khách hàng là một thẻ */
 @media (max-width: 900px) {
@@ -764,3 +778,10 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
   .dash-grid > .panel-wide { grid-column: 1 / -1; }
   .dash-grid > .panel:last-child { grid-column: auto; }
 }
+
+/* ===== Chi tiết khách hàng ===== */
+.cd-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+.cd-title { font-size: 1.15rem; margin: 0 0 10px; color: var(--navy); }
+.cd-table tfoot td { background: #f4f7fb; border-top: 2px solid var(--line); }
+.cd-table .cd-route { max-width: 420px; }
+.st-none { background: #f1f5f9; color: #475569; }

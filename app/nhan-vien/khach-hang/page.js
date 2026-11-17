@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, customerTypes, vnd, customerCode, fmtDate } from '../../../lib/supabase';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { supabase, customerTypes, vnd, customerCode, fmtDate, orderCode, stopCode } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
 
 const blank = { name: '', phone: '', email: '', address: '', company: '', tax_code: '', type: 'le', note: '' };
@@ -9,26 +9,105 @@ const dmy = fmtDate;
 
 // Công nợ theo khách = tổng cước các đơn của khách − tiền đã thu theo phiếu Thu.
 // Đơn 1 điểm: cước của đơn; đơn nhiều điểm: cước của từng điểm trả thuộc khách đó.
+// Mỗi khách có thêm `lines`: từng đơn của khách (cước, đã thu, còn nợ) để hiện bảng chi tiết.
 function debtByCustomer(orders, paidItems) {
   const m = {};
-  const row = (id) => (m[id] = m[id] || { fee: 0, paid: 0, debt: 0, orders: new Set() });
-  const add = (id, v, orderId) => {
+  const row = (id) => (m[id] = m[id] || { fee: 0, paid: 0, debt: 0, orders: new Set(), lines: {} });
+  const line = (id, o) => {
+    const r = row(id);
+    return (r.lines[o.id] = r.lines[o.id] || { order: o, fee: 0, paid: 0, stops: [] });
+  };
+  const add = (id, v, o, stop) => {
     if (!id) return;
     row(id).fee += Number(v || 0);
-    row(id).orders.add(orderId);
+    row(id).orders.add(o.id);
+    const l = line(id, o);
+    l.fee += Number(v || 0);
+    if (stop) l.stops.push(stop);
   };
   orders.forEach((o) => {
-    if (o.order_type === 'multi') (o.order_stops || []).forEach((s) => add(s.customer_id, s.fee, o.id));
-    else add(o.customer_id, o.fee, o.id);
+    if (o.order_type === 'multi') (o.order_stops || []).forEach((s) => add(s.customer_id, s.fee, o, s));
+    else add(o.customer_id, o.fee, o, null);
   });
   (paidItems || []).forEach((i) => {
     const cid = i.collections?.customer_id;
-    if (cid) row(cid).paid += Number(i.amount || 0);
+    if (!cid) return;
+    const amt = Number(i.amount || 0);
+    row(cid).paid += amt;
+    const l = row(cid).lines[i.order_id];
+    if (l) l.paid += amt;
   });
   Object.values(m).forEach((r) => {
     r.debt = r.fee - r.paid;
+    r.list = Object.values(r.lines).sort(
+      (a, b) => (b.order.ship_date || '').localeCompare(a.order.ship_date || '') || b.order.order_no - a.order.order_no
+    );
   });
   return m;
+}
+
+// Bảng chi tiết các đơn hàng của một khách
+function CustomerDetail({ d }) {
+  if (!d || !d.list.length) return <p className="muted" style={{ margin: 0 }}>Khách hàng này chưa có đơn hàng nào.</p>;
+  return (
+    <div className="cus-detail-box">
+      <div className="cus-sum">
+        <div><span className="muted small">Số đơn hàng</span><strong>{d.orders.size}</strong></div>
+        <div><span className="muted small">Tổng cước</span><strong>{vnd(d.fee)}</strong></div>
+        <div><span className="muted small">Đã thanh toán</span><strong className="debt-ok">{vnd(d.paid)}</strong></div>
+        <div><span className="muted small">Công nợ (còn phải thu)</span><strong className={d.debt ? 'debt-has' : 'debt-zero'}>{vnd(d.debt)}</strong></div>
+      </div>
+      <table className="cus-detail-table">
+        <thead>
+          <tr>
+            <th>Mã đơn</th>
+            <th>Ngày vận chuyển</th>
+            <th>Tuyến / Hàng hoá</th>
+            <th className="num">Cước</th>
+            <th className="num">Đã thanh toán</th>
+            <th className="num">Công nợ</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          {d.list.map(({ order: o, fee, paid, stops }) => {
+            const debt = fee - paid;
+            const sorted = [...stops].sort((a, b) => a.stop_no - b.stop_no);
+            const codes = sorted.length ? sorted.map((s) => stopCode(o.order_no, s.stop_no)) : [orderCode(o.order_no)];
+            const dest = sorted.length ? sorted.map((s) => s.address).join('; ') : o.delivery;
+            const cargo = sorted.length ? sorted.map((s) => s.cargo).filter(Boolean).join('; ') : o.cargo;
+            return (
+              <tr key={o.id}>
+                <td>{codes.map((c) => <div key={c}><span className="stop-code">{c}</span></div>)}</td>
+                <td>{o.ship_date ? fmtDate(o.ship_date) : <span className="muted">—</span>}</td>
+                <td>
+                  <div>{o.pickup} → {dest}</div>
+                  {cargo && <div className="muted small">{cargo}</div>}
+                </td>
+                <td className="num">{vnd(fee)}</td>
+                <td className="num">{vnd(paid)}</td>
+                <td className="num"><strong className={debt ? 'debt-has' : 'debt-zero'}>{vnd(debt)}</strong></td>
+                <td>
+                  {debt <= 0 ? <span className="pill pill-ok">Đã thanh toán</span>
+                    : paid > 0 ? <span className="pill pill-warn">Thanh toán một phần</span>
+                    : <span className="pill pill-err">Chưa thanh toán</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={3}><strong>Tổng cộng</strong></td>
+            <td className="num"><strong>{vnd(d.fee)}</strong></td>
+            <td className="num"><strong>{vnd(d.paid)}</strong></td>
+            <td className="num"><strong className={d.debt ? 'debt-has' : 'debt-zero'}>{vnd(d.debt)}</strong></td>
+            <td />
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
 }
 
 export default function Page() {
@@ -39,6 +118,7 @@ export default function Page() {
   const [q, setQ] = useState('');
   const [type, setType] = useState('');
   const [sort, setSort] = useState('debt'); // debt | new | name
+  const [open, setOpen] = useState({}); // khách nào đang mở bảng chi tiết
   const [editing, setEditing] = useState(null);
   const [formErr, setFormErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,8 +127,8 @@ export default function Page() {
     setLoading(true);
     const [c, o, p] = await Promise.all([
       supabase.from('customers').select('*').order('created_at', { ascending: false }),
-      supabase.from('orders').select('id, order_type, customer_id, fee, order_stops(customer_id, fee)'),
-      supabase.from('collection_items').select('amount, collections(customer_id)'),
+      supabase.from('orders').select('id, order_no, order_type, customer_id, fee, ship_date, pickup, delivery, cargo, order_stops(customer_id, fee, stop_no, address, cargo)'),
+      supabase.from('collection_items').select('order_id, amount, collections(customer_id)'),
     ]);
     if (c.error) setErr('Không tải được danh sách khách hàng.');
     else {
@@ -154,14 +234,16 @@ export default function Page() {
             <th>Công ty / MST</th>
             <th>Địa chỉ</th>
             <th className="c-debt">Công nợ</th>
-            <th className="c-act"><span className="sr-only">Thao tác</span></th>
+            <th className="c-act c-act3"><span className="sr-only">Thao tác</span></th>
           </tr>
         </thead>
         <tbody>
           {shown.map((r) => {
             const d = debts[r.id];
+            const isOpen = !!open[r.id];
             return (
-              <tr key={r.id}>
+              <Fragment key={r.id}>
+              <tr>
                 <td className="c-date" data-label="Ngày tạo"><div>{dmy(r.created_at)}</div></td>
                 <td data-label="Khách hàng">
                   <div>
@@ -188,15 +270,30 @@ export default function Page() {
                   <div>
                     <strong className={d?.debt ? 'debt-has' : 'debt-zero'}>{vnd(d?.debt || 0)}</strong>
                     {d && <div className="muted small">{d.orders.size} đơn{d.paid > 0 ? ` · đã thu ${vnd(d.paid)}` : ''}</div>}
+                    <button
+                      type="button"
+                      className="btn btn-outline sm detail-btn"
+                      aria-expanded={isOpen}
+                      onClick={() => setOpen((s) => ({ ...s, [r.id]: !s[r.id] }))}
+                    >
+                      {isOpen ? 'Ẩn chi tiết ▴' : 'Chi tiết ▾'}
+                    </button>
                   </div>
                 </td>
-                <td className="c-act">
+                <td className="c-act c-act3">
                   <div className="actions">
+                    <a className="btn btn-primary sm" href={`/nhan-vien/khach-hang/chi-tiet/?id=${r.id}`}>Chi tiết</a>
                     <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>
                     <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
                   </div>
                 </td>
               </tr>
+              {isOpen && (
+                <tr className="cus-detail-row">
+                  <td colSpan={7}><CustomerDetail d={d} /></td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
           {!loading && !shown.length && <tr><td colSpan={7} className="muted">Chưa có khách hàng nào.</td></tr>}
