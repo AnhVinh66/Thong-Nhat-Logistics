@@ -145,6 +145,7 @@ ${P} .admin {
   --gold: #fbbf24;
   --chart-1: #3987e5; /* màu biểu đồ cho nền tối (bộ màu đã kiểm tra) */
   --chart-2: #d95926;
+  --grid: #33445f; /* đường kẻ bảng */
   --shadow: 0 10px 30px rgba(0, 0, 0, .45);
   color-scheme: dark;
   color: var(--text); /* chữ kế thừa từ body vẫn là màu tối -> đặt lại */

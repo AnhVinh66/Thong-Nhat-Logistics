@@ -538,18 +538,18 @@ export default function Page() {
                       <Extras toll={r.toll_fee} park={r.parking_fee} />
                       <PaidInfo fee={r.fee} paid={paid.byOrder[r.id]} />
                     </td>
-                    <td className="actions">
+                    <td className="actions"><div className="act-grid">
                       {!isMulti && (
                         <button
-                          className={`btn sm ${photoCounts[`${r.id}|`] ? 'btn-docs-has' : 'btn-docs'}`}
+                          className={`btn sm act-docs ${photoCounts[`${r.id}|`] ? 'btn-docs-has' : 'btn-docs'}`}
                           onClick={() => setDocsFor({ orderId: r.id, stopId: null, title: `Chứng từ giao hàng – ${orderCode(r.order_no)}` })}
                         >
                           Chứng từ ({photoCounts[`${r.id}|`] || 0})
                         </button>
                       )}
-                      {editOrder && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
-                      {deleteOrder && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
-                    </td>
+                      {editOrder && <button className="btn btn-outline sm act-edit" onClick={() => openEdit(r)}>Sửa</button>}
+                      {deleteOrder && <button className="btn btn-danger sm act-del" onClick={() => remove(r)}>Xoá</button>}
+                    </div></td>
                   </tr>
                   {isMulti && stops.map((st, si) => (
                     <tr key={st.id} className={`stop-row ${si === stops.length - 1 ? 'stop-row-last' : ''}`}>
@@ -567,9 +567,9 @@ export default function Page() {
                         <Extras toll={st.toll_fee} park={st.parking_fee} />
                         {stops.filter((x) => x.customer_id === st.customer_id).length === 1 && <PaidInfo fee={st.fee} paid={paid.byCustomer[`${r.id}|${st.customer_id}`]} />}
                       </td>
-                      <td className="actions">
+                      <td className="actions"><div className="act-grid">
                         <button
-                          className={`btn sm ${photoCounts[`${r.id}|${st.id}`] ? 'btn-docs-has' : 'btn-docs'}`}
+                          className={`btn sm act-docs ${photoCounts[`${r.id}|${st.id}`] ? 'btn-docs-has' : 'btn-docs'}`}
                           onClick={() => setDocsFor({
                             orderId: r.id,
                             stopId: st.id,
@@ -578,7 +578,7 @@ export default function Page() {
                         >
                           Chứng từ ({photoCounts[`${r.id}|${st.id}`] || 0})
                         </button>
-                      </td>
+                      </div></td>
                     </tr>
                   ))}
                 </Fragment>

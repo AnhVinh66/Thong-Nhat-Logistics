@@ -10,7 +10,7 @@ import DateInput from '../../../components/DateInput';
 import { compress } from '../../../components/staff/DeliveryDocs';
 import CollectionForm from '../../../components/staff/CollectionForm';
 import DropZone from '../../../components/staff/DropZone';
-import { useRole } from '../../../components/staff/Role';
+import { useRole, roleLabel } from '../../../components/staff/Role';
 
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
 const stamp = fmtDateTime;
@@ -109,72 +109,129 @@ function Detail({ row, recon, onClose, onChanged, onEdit }) {
 
   const items = row.collection_items || [];
   const allocated = items.reduce((a, i) => a + Number(i.amount), 0);
+  const unallocated = Number(row.amount) - allocated;
+  const [staff, setStaff] = useState(null);
+  useEffect(() => {
+    if (!row.created_by) return;
+    supabase.from('staff_roles').select('full_name, role').eq('user_id', row.created_by).maybeSingle().then(({ data }) => setStaff(data || null));
+  }, [row.created_by]);
+
+  // Thời điểm nhận tiền: theo dòng sao kê đã khớp (có giờ), không thì theo ngày thu trên phiếu
+  const txn = row.bank_transactions;
+  const ft = txn ? fmtTime(txn.txn_time, txn.has_time) : null;
+  const received = ft ? `${ft.time ? `${ft.time}, ` : ''}${ft.date}` : dmy(row.collected_on);
+  // Mã hệ thống: THU_ngày_số tài khoản_số tiền (giống mã dòng sao kê) khi chuyển khoản
+  const sysCode = row.method === 'transfer' && row.bank_accounts
+    ? `THU_${(row.collected_on || '').replaceAll('-', '')}_${(row.bank_accounts.account_number || '').replace(/\D/g, '')}_${Number(row.amount)}`
+    : `THU_${(row.collected_on || '').replaceAll('-', '')}_TIEN_MAT_${Number(row.amount)}`;
+  const state = recon?.state || 'na';
+  const orderDesc = (o) => {
+    if (!o) return '';
+    if (o.order_type === 'multi') {
+      const mine = (o.order_stops || []).filter((s) => s.customer_id === row.customer_id);
+      return mine.map((s) => [s.cargo, s.weight, s.address].filter(Boolean).join(' - ')).join('; ') || 'Đơn nhiều điểm';
+    }
+    return [o.cargo, o.weight, o.delivery && `giao ${o.delivery}`].filter(Boolean).join(' - ') || '—';
+  };
+  const staffName = staff?.full_name || row.created_by_name || '—';
 
   return (
-    <Modal title={`Phiếu Thu ${collectionCode(row.collection_no)}`} onClose={onClose} width={760}>
-      <dl className="detail">
-        <div><dt>Khách hàng</dt><dd><strong>{customerCode(row.customers?.customer_no)} – {row.customers?.name}</strong></dd></div>
-        <div><dt>Số tiền thu</dt><dd><strong className="debt-has" style={{ color: 'var(--ok)' }}>{vnd(row.amount)}</strong></dd></div>
-        <div><dt>Hình thức</dt><dd>{methodLabel[row.method]}{row.bank_accounts ? ` · ${row.bank_accounts.bank_name} ${row.bank_accounts.account_number}` : ''}</dd></div>
-        <div><dt>Ngày thu tiền</dt><dd>{dmy(row.collected_on)}</dd></div>
-        <div><dt>Nội dung</dt><dd>{row.content || '—'}</dd></div>
-        <div><dt>Người tạo</dt><dd>{row.created_by_name || '—'} · {stamp(row.created_at)}</dd></div>
-        {row.updated_at && <div><dt>Sửa lần cuối</dt><dd>{row.updated_by_name || '—'} · {stamp(row.updated_at)}</dd></div>}
-      </dl>
-
-      {recon && (
-        <div className={`recon-box recon-${recon.state}`} role="status">
-          <span className="recon-icon" aria-hidden="true">{reconMark[recon.state]}</span>
+    <Modal title={`Chi tiết đề xuất thu · ${collectionCode(row.collection_no)}`} onClose={onClose} width={1000}>
+      <div className="ct">
+        <div className={`ct-amount ct-${state}`}>
+          <span className="ct-amount-icon" aria-hidden="true">{state === 'ok' ? '✓' : state === 'bad' ? '?' : '₫'}</span>
           <div>
-            <strong>{recon.state === 'ok' ? 'Đã khớp sao kê' : recon.state === 'bad' ? 'Chưa khớp sao kê' : 'Không áp dụng'}</strong>
-            <p style={{ margin: '2px 0 0' }}>{recon.text}</p>
+            <p className="ct-amount-value">{commas(row.amount)} <span>VNĐ</span></p>
+            <div className="ct-chips">
+              {state === 'na'
+                ? <span className="ct-chip na">Tiền mặt – không đối soát</span>
+                : <span className={`ct-chip ${state}`} title={recon?.text}>{state === 'ok' ? '✓' : '✕'} Sao kê</span>}
+              <span className="ct-chip na">{methodLabel[row.method]}</span>
+            </div>
           </div>
         </div>
-      )}
+        {recon && state !== 'na' && <p className={`ct-recon-note ${state}`}>{recon.text}</p>}
 
-      <h3 style={{ margin: '16px 0 8px' }}>Đơn hàng đã thu</h3>
-      {items.length ? (
-        <table className="alloc-table">
-          <thead><tr><th>Đơn hàng</th><th className="num">Số tiền thu</th></tr></thead>
+        <h3 className="ct-h"><span aria-hidden="true">ⓘ</span> Thông tin chi tiết</h3>
+        <div className="ct-grid">
+          <div className="ct-card"><span className="ct-label">Mã hệ thống</span><strong className="ct-mono">{sysCode}</strong><span className="muted small">Mã phiếu: {collectionCode(row.collection_no)}</span></div>
+          <div className="ct-card"><span className="ct-label">Khách hàng</span><strong>{customerCode(row.customers?.customer_no)} - {row.customers?.name}</strong></div>
+          <div className="ct-card"><span className="ct-label">Ngày nhận tiền</span><strong>{received}</strong></div>
+          <div className="ct-card">
+            <span className="ct-label">Nhân viên</span>
+            <div className="ct-person">
+              <span className="ct-avatar" aria-hidden="true">{(staffName[0] || '?').toUpperCase()}</span>
+              <div>
+                <strong>{staffName}</strong>
+                {staff?.role && <span className="ct-badge">{roleLabel[staff.role]}</span>}
+                <span className="muted small" style={{ display: 'block' }}>Tạo lúc {stamp(row.created_at)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="ct-card">
+            <span className="ct-label">Tài khoản nhận tiền</span>
+            {row.bank_accounts ? (
+              <div className="ct-person">
+                <span className="ct-bank" aria-hidden="true">{row.bank_accounts.bank_name.slice(0, 2).toUpperCase()}</span>
+                <div><strong>{row.bank_accounts.bank_name}</strong><span className="ct-mono" style={{ display: 'block' }}>{row.bank_accounts.account_number}</span></div>
+              </div>
+            ) : <strong>{methodLabel[row.method]}</strong>}
+          </div>
+          <div className="ct-card"><span className="ct-label">Nội dung thu</span><strong>{row.content || '—'}</strong></div>
+        </div>
+
+        <div className="ct-card ct-docs">
+          <span className="ct-label">Tài liệu giao dịch ({photos.length} ảnh bill)</span>
+          {photos.length ? (
+            <ul className="ct-thumbs">
+              {photos.map((p) => (
+                <li key={p.id}>
+                  {urls[p.path] ? (
+                    <a href={urls[p.path]} target="_blank" rel="noopener noreferrer" aria-label="Mở ảnh bill cỡ lớn">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={urls[p.path]} alt="Ảnh bill thu tiền" loading="lazy" />
+                    </a>
+                  ) : <div className="thumb-ph">...</div>}
+                  <button type="button" className="thumb-del" onClick={() => removePhoto(p)} aria-label="Xoá ảnh này" hidden={!canEdit}>✕</button>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="muted small" style={{ margin: 0 }}>Chưa có ảnh bill.</p>}
+          {canAdd && <DropZone id="d-add" wide disabled={busy} onFiles={add} label={busy ? 'Đang tải ảnh lên...' : 'Gắn thêm ảnh bill'} />}
+          {msg && <p className={msg.ok ? 'ok-msg' : 'err'} role="status" style={{ margin: 0 }}>{msg.text}</p>}
+        </div>
+
+        <h3 className="ct-h"><span aria-hidden="true">▤</span> Danh sách thanh toán</h3>
+        <table className="ct-table">
+          <thead><tr><th>Định khoản</th><th>Mã đơn hàng</th><th>Mô tả</th><th className="num">Số tiền thanh toán (đ)</th></tr></thead>
           <tbody>
             {items.map((i) => (
-              <tr key={i.id || i.order_id}><td><strong>{itemCode(i, row.customer_id)}</strong></td><td className="num">{vnd(i.amount)}</td></tr>
+              <tr key={i.id || i.order_id}>
+                <td>Thu đơn hàng</td>
+                <td><strong>{itemCode(i, row.customer_id)}</strong></td>
+                <td>{orderDesc(i.orders)}</td>
+                <td className="num">{commas(i.amount)}</td>
+              </tr>
             ))}
+            {unallocated > 0 && (
+              <tr>
+                <td>Chưa gán đơn</td>
+                <td>—</td>
+                <td className="muted">Tiền khách đã trả nhưng chưa gán cho đơn hàng nào</td>
+                <td className="num sum-warn">{commas(unallocated)}</td>
+              </tr>
+            )}
           </tbody>
           <tfoot>
-            <tr><td><strong>Tổng đã gán</strong></td><td className="num"><strong>{vnd(allocated)}</strong></td></tr>
-            {allocated < Number(row.amount) && (
-              <tr><td className="muted">Chưa gán cho đơn nào</td><td className="num sum-warn">{vnd(Number(row.amount) - allocated)}</td></tr>
-            )}
+            <tr><td colSpan={3}>Tổng tiền</td><td className="num">{commas(row.amount)}</td></tr>
           </tfoot>
         </table>
-      ) : (
-        <p className="muted">Phiếu này chưa gán cho đơn hàng nào.</p>
-      )}
+        {row.updated_at && <p className="muted small" style={{ margin: 0 }}>Sửa lần cuối: {row.updated_by_name || '—'} · {stamp(row.updated_at)}</p>}
 
-      <div className="doc-head" style={{ marginTop: 18 }}>
-        <h3 style={{ margin: 0 }}>Ảnh bill ({photos.length})</h3>
-      </div>
-      {canAdd && <DropZone id="d-add" wide disabled={busy} onFiles={add} label={busy ? 'Đang tải ảnh lên...' : 'Gắn thêm ảnh bill'} />}
-      {msg && <p className={msg.ok ? 'ok-msg' : 'err'} role="status">{msg.text}</p>}
-      {photos.length ? (
-        <ul className="thumbs">
-          {photos.map((p) => (
-            <li key={p.id}>
-              {urls[p.path] ? (
-                <a href={urls[p.path]} target="_blank" rel="noopener noreferrer" aria-label="Mở ảnh bill cỡ lớn">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={urls[p.path]} alt="Ảnh bill thu tiền" loading="lazy" />
-                </a>
-              ) : <div className="thumb-ph">Đang tải...</div>}
-              <button type="button" className="thumb-del" onClick={() => removePhoto(p)} aria-label="Xoá ảnh này" hidden={!canEdit}>✕</button>
-            </li>
-          ))}
-        </ul>
-      ) : <p className="muted small">Chưa có ảnh bill.</p>}
-      <div className="modal-actions" style={{ marginTop: 16 }}>
-        <button className="btn btn-outline" onClick={onClose}>Đóng</button>
-        {canEdit && <button className="btn btn-primary" onClick={() => onEdit(row)}>Sửa phiếu</button>}
+        <div className="modal-actions">
+          <button className="btn btn-outline" onClick={onClose}>Đóng</button>
+          {canEdit && <button className="btn btn-primary" onClick={() => onEdit(row)}>Sửa phiếu</button>}
+        </div>
       </div>
     </Modal>
   );
@@ -201,7 +258,7 @@ export default function Page() {
     setLoading(true);
     const { data, error } = await supabase
       .from('collections')
-      .select('*, customers(customer_no, name), bank_accounts(bank_name, account_number), bank_transactions(txn_time, has_time, amount, description), collection_items(id, order_id, amount, orders(order_no, order_type, order_stops(customer_id, stop_no))), collection_photos(id)')
+      .select('*, customers(customer_no, name), bank_accounts(bank_name, account_number), bank_transactions(txn_time, has_time, amount, description), collection_items(id, order_id, amount, orders(order_no, order_type, cargo, weight, delivery, order_stops(customer_id, stop_no, cargo, weight, address))), collection_photos(id)')
       .order('collected_on', { ascending: false })
       .order('collection_no', { ascending: false });
     if (error) setErr('Không tải được danh sách Thu. Hãy chạy supabase/collections.sql trên Supabase.');

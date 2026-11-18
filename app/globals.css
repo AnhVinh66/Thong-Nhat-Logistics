@@ -970,7 +970,7 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .cus-name .cus-code { margin: 0; }
 
 /* ===== Tổng quan: biểu đồ đơn hàng & doanh thu theo tuần ===== */
-:root { --chart-1: #2a78d6; --chart-2: #eb6834; }
+:root { --chart-1: #2a78d6; --chart-2: #eb6834; --grid: #cfd8e4; }
 .wc { margin: 0 0 18px; }
 .wc-toggle { border: 0; background: transparent; cursor: pointer; font: inherit; }
 .wc-heroes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
@@ -1016,3 +1016,100 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .row-icon.danger:hover { border-color: var(--err); background: #fef2f2; }
 .exp-table .x-act { width: 96px; }
 .exp-table .x-act .actions { flex-wrap: nowrap; }
+
+/* ===== Chi tiết đề xuất thu ===== */
+.ct { display: grid; gap: 16px; }
+.ct-amount { justify-self: center; display: flex; align-items: center; gap: 18px; padding: 16px 28px; border-radius: 14px; border: 1.5px solid; background: #fff; box-shadow: 0 8px 22px rgba(11, 37, 69, .08); }
+.ct-amount.ct-ok { border-color: #16a34a; }
+.ct-amount.ct-bad { border-color: #dc2626; }
+.ct-amount.ct-na { border-color: var(--line); }
+.ct-amount-icon { font-size: 2.6rem; font-weight: 800; line-height: 1; width: 44px; text-align: center; }
+.ct-ok .ct-amount-icon, .ct-ok .ct-amount-value { color: #16a34a; }
+.ct-bad .ct-amount-icon, .ct-bad .ct-amount-value { color: #dc2626; }
+.ct-na .ct-amount-icon, .ct-na .ct-amount-value { color: var(--navy); }
+.ct-amount-value { margin: 0 0 6px; font-size: 1.9rem; font-weight: 800; letter-spacing: .01em; }
+.ct-amount-value span { font-size: 1.2rem; color: #9aa6b8; }
+.ct-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.ct-chip { font-size: .85rem; font-weight: 600; padding: 3px 12px; border-radius: 999px; border: 1.5px solid; }
+.ct-chip.ok { color: #16a34a; border-color: #86efac; background: #f0fdf4; }
+.ct-chip.bad { color: #dc2626; border-color: #fca5a5; background: #fef2f2; }
+.ct-chip.na { color: var(--muted); border-color: var(--line); background: var(--soft); }
+.ct-recon-note { margin: -6px 0 0; text-align: center; font-size: .86rem; }
+.ct-recon-note.ok { color: #15803d; }
+.ct-recon-note.bad { color: #b91c1c; }
+.ct-h { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 6px 0 0; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--navy); }
+.ct-h span { color: #2563eb; }
+.ct-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ct-card { display: grid; gap: 6px; align-content: start; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; min-width: 0; }
+.ct-card strong { color: var(--navy); overflow-wrap: anywhere; }
+.ct-label { font-size: .84rem; color: #16a34a; font-weight: 600; }
+.ct-mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9rem; }
+.ct-person { display: flex; align-items: center; gap: 10px; }
+.ct-avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--navy-3); color: #fff; display: grid; place-items: center; font-weight: 800; }
+.ct-bank { flex: none; width: 52px; height: 34px; border-radius: 8px; border: 1px solid var(--line); display: grid; place-items: center; font-weight: 800; color: #b91c1c; background: #fff; }
+.ct-badge { display: inline-block; margin-left: 6px; font-size: .72rem; font-weight: 700; padding: 1px 8px; border-radius: 6px; border: 1px solid #f59e0b; color: #b45309; background: #fffbeb; }
+.ct-docs { gap: 10px; }
+.ct-thumbs { display: flex; gap: 10px; flex-wrap: wrap; }
+.ct-thumbs li { position: relative; width: 84px; height: 108px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.ct-thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ct-thumbs .thumb-del { position: absolute; top: 3px; right: 3px; }
+.ct-table { width: 100%; border-collapse: collapse; border: 1px solid var(--line); font-size: .95rem; }
+.ct-table th { background: #f1f4f8; font-weight: 700; color: var(--navy); padding: 12px; border: 1px solid var(--line); text-align: center; }
+.ct-table td { padding: 12px; border: 1px solid var(--line); }
+.ct-table td:first-child, .ct-table td:nth-child(2) { text-align: center; }
+.ct-table .num { text-align: right; }
+.ct-table tfoot td { font-weight: 800; color: var(--navy); text-align: center; }
+.ct-table tfoot td.num { text-align: right; }
+
+/* ===== Thông tin cá nhân ===== */
+.side-user-link { text-decoration: none; color: inherit; border-radius: 10px; transition: background .15s; }
+.side-user-link:hover, .side-user-link.active { background: rgba(255,255,255,.08); }
+.side-avatar { overflow: hidden; }
+.side-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.side-user-link .side-login { white-space: normal; }
+.pf { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; align-items: start; max-width: 1100px; }
+.pf-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+.pf-avatar-card { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.pf-avatar { width: 132px; height: 132px; border-radius: 50%; overflow: hidden; background: var(--navy-3); color: #fff; display: grid; place-items: center; font-size: 3rem; font-weight: 800; box-shadow: 0 6px 18px rgba(11, 37, 69, .18); }
+.pf-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.pf-name { font-size: 1.2rem; color: var(--navy); }
+.pf-role { font-size: .85rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 2px 10px; }
+.pf-avatar-card .dropzone-wide { margin: 6px 0 0; }
+.pf-h { font-size: 1.1rem; margin: 0 0 14px; }
+.pf-dl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; margin: 4px 0 8px; }
+.pf-dl dt { font-size: .8rem; color: var(--muted); font-weight: 700; }
+.pf-dl dd { margin: 2px 0 0; font-weight: 600; color: var(--text); }
+
+/* ===== Bảng trong hệ thống (CMS): lưới kẻ ngang + kẻ dọc đầy đủ, nội dung căn giữa theo chiều dọc =====
+   Đặt cuối file để thắng các kiểu viền riêng lẻ trước đó. Bảng Kế hoạch chạy xe có lưới riêng. */
+.admin table:not(.plan-table) { border-collapse: separate !important; border-spacing: 0 !important; border: 1px solid var(--grid) !important; border-radius: 12px; overflow: hidden; }
+.admin table:not(.plan-table) > * > tr > th,
+.admin table:not(.plan-table) > * > tr > td {
+  border: 0 !important;
+  border-right: 1px solid var(--grid) !important;
+  border-bottom: 1px solid var(--grid) !important;
+  vertical-align: middle !important;
+}
+.admin table:not(.plan-table) > * > tr > :last-child { border-right: 0 !important; }
+.admin table:not(.plan-table) > :last-child > tr:last-child > * { border-bottom: 0 !important; }
+.admin table:not(.plan-table) > thead > tr > th { border-right-color: rgba(255, 255, 255, .16) !important; }
+.admin table.bk-table > thead > tr > th, .admin table.ct-table > thead > tr > th, .admin table.drv-days > thead > tr > th,
+.admin table.alloc-table > thead > tr > th, .admin table.dash-table > thead > tr > th { border-right-color: var(--grid) !important; }
+/* Dòng điểm trả của đơn nhiều điểm: vẫn nền xám nhạt, kẻ lưới như các dòng khác */
+.admin .stop-row td { padding-top: 10px !important; padding-bottom: 10px !important; }
+/* Bảng lồng trong ô (VD chi tiết công nợ, thưởng theo ngày) giữ khoảng cách gọn */
+.admin td > table, .admin td > div > table { margin: 0; }
+
+/* Cột thao tác Đơn hàng: 3 ô cố định */
+.act-grid { display: grid; grid-template-columns: 112px 56px 56px; gap: 6px; justify-content: end; align-items: center; }
+.act-grid .act-docs { grid-column: 1; }
+.act-grid .act-edit { grid-column: 2; }
+.act-grid .act-del { grid-column: 3; }
+.act-grid .btn { width: 100%; padding-left: 6px; padding-right: 6px; white-space: nowrap; }
+/* Ô thao tác phải là ô bảng thật (trước đây bị đặt display:flex nên lệch hàng, mất đường kẻ) */
+.admin table td.actions { display: table-cell !important; white-space: nowrap; text-align: right; }
+.admin table td.actions > .btn + .btn, .admin table td.actions > .row-icon + .row-icon { margin-left: 6px; }
+/* Cho chữ trong ô xuống dòng để bảng vừa khung, không tràn ngang; số tiền, ngày, nút giữ một dòng */
+.admin .staff-table td { white-space: normal; }
+.admin .staff-table td.num, .admin .staff-table th { white-space: nowrap; }
+.act-grid { grid-template-columns: 100px 50px 50px; gap: 5px; }

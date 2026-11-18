@@ -31,6 +31,7 @@ const VIEW = {
   '/nhan-vien/lai-xe': ['staff', 'accountant', 'dispatcher'],
   '/nhan-vien/ke-hoach': ['staff', 'accountant', 'dispatcher'],
   '/nhan-vien/tai-khoan': ['staff'],
+  '/nhan-vien/ca-nhan': ['staff', 'sales', 'accountant', 'dispatcher'],
 };
 
 export function canView(role, pathname) {

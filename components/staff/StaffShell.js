@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { supabase, LOGIN_DOMAIN, displayLogin } from '../../lib/supabase';
+import { supabase, LOGIN_DOMAIN, displayLogin, avatarUrl } from '../../lib/supabase';
 import Logo from '../Logo';
 import Icon from '../Icon';
 import DriverApp from './DriverApp';
@@ -123,7 +123,7 @@ export default function StaffShell({ children }) {
   const r = role.role;
   return (
     <RoleProvider role={r} userId={userId}>
-      <AdminLayout role={r} pathname={pathname} email={session.user.email} login={displayLogin(session.user.email)} onLogout={() => supabase.auth.signOut()}>
+      <AdminLayout role={r} userId={userId} pathname={pathname} email={session.user.email} login={displayLogin(session.user.email)} onLogout={() => supabase.auth.signOut()}>
         {canView(r, pathname) ? children : (
           <div className="card">
             <h1 style={{ fontSize: '1.4rem' }}>Bạn không có quyền truy cập mục này</h1>
@@ -185,8 +185,20 @@ function useTheme() {
   return [theme, () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))];
 }
 
-function AdminLayout({ role, pathname, email, login, onLogout, children }) {
+function AdminLayout({ role, userId, pathname, email, login, onLogout, children }) {
   const [open, setOpen] = useState(false);
+  // Họ tên + ảnh đại diện hiện ở cuối menu (tải riêng, lỗi thì vẫn dùng tên đăng nhập)
+  const [me, setMe] = useState(null);
+  useEffect(() => {
+    if (!userId) return;
+    const loadMe = () => supabase.from('staff_roles').select('full_name, avatar_path').eq('user_id', userId).maybeSingle()
+      .then(({ data, error }) => setMe(error ? null : data));
+    loadMe();
+    window.addEventListener('profile-updated', loadMe);
+    return () => window.removeEventListener('profile-updated', loadMe);
+  }, [userId]);
+  const shownName = me?.full_name || login;
+  const myAvatar = avatarUrl(me?.avatar_path);
   const [pwOpen, setPwOpen] = useState(false);
   const [theme, toggleTheme] = useTheme();
   const isActive = (h) => (h === '/nhan-vien/' ? pathname.replace(/\/$/, '') === '/nhan-vien' : pathname.startsWith(h));
@@ -233,10 +245,13 @@ function AdminLayout({ role, pathname, email, login, onLogout, children }) {
           <a className="side-link" href="/" target="_blank" rel="noopener noreferrer">
             <Icon name="external" size={20} /><span>Xem website</span>
           </a>
-          <div className="side-user">
-            <span className="side-avatar" aria-hidden="true">{(login[0] || '?').toUpperCase()}</span>
-            <span className="side-login" title={login}>{login}<small className="side-role">{roleLabel[role]}</small></span>
-          </div>
+          <Link href="/nhan-vien/ca-nhan/" className={`side-user side-user-link ${isActive('/nhan-vien/ca-nhan/') ? 'active' : ''}`} title="Thông tin cá nhân">
+            <span className="side-avatar" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {myAvatar ? <img src={myAvatar} alt="" /> : (shownName[0] || '?').toUpperCase()}
+            </span>
+            <span className="side-login">{shownName}<small className="side-role">{roleLabel[role]} · Thông tin cá nhân</small></span>
+          </Link>
           <button type="button" className="side-link side-theme" onClick={() => setPwOpen(true)}>
             <Icon name="key" size={20} /><span>Đổi mật khẩu</span>
           </button>

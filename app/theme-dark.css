@@ -13,6 +13,7 @@ html[data-theme="dark"] .admin {
   --gold: #fbbf24;
   --chart-1: #3987e5; /* màu biểu đồ cho nền tối (bộ màu đã kiểm tra) */
   --chart-2: #d95926;
+  --grid: #33445f; /* đường kẻ bảng */
   --shadow: 0 10px 30px rgba(0, 0, 0, .45);
   color-scheme: dark;
   color: var(--text); /* chữ kế thừa từ body vẫn là màu tối -> đặt lại */
@@ -211,6 +212,24 @@ html[data-theme="dark"] .admin .drv-period.p-pm { background: hsl(253, 45%, 20%)
 html[data-theme="dark"] .admin .link-btn { color: hsl(217, 90%, 71%); }
 html[data-theme="dark"] .admin .row-icon { background: hsl(220, 30%, 14%); }
 html[data-theme="dark"] .admin .row-icon.danger:hover { background: hsl(0, 45%, 16%); }
+html[data-theme="dark"] .admin .ct-amount { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .ct-ok .ct-amount-icon,
+html[data-theme="dark"] .admin .ct-ok .ct-amount-value { color: hsl(142, 76%, 75%); }
+html[data-theme="dark"] .admin .ct-bad .ct-amount-icon,
+html[data-theme="dark"] .admin .ct-bad .ct-amount-value { color: hsl(0, 72%, 67%); }
+html[data-theme="dark"] .admin .ct-chip.ok { color: hsl(142, 76%, 75%); background: hsl(138, 45%, 17%); }
+html[data-theme="dark"] .admin .ct-chip.bad { color: hsl(0, 72%, 67%); border-color: hsl(0, 35%, 33%); background: hsl(0, 45%, 16%); }
+html[data-theme="dark"] .admin .ct-recon-note.ok { color: hsl(142, 72%, 79%); }
+html[data-theme="dark"] .admin .ct-recon-note.bad { color: hsl(0, 74%, 72%); }
+html[data-theme="dark"] .admin .ct-h span { color: hsl(221, 83%, 66%); }
+html[data-theme="dark"] .admin .ct-card { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .ct-label { color: hsl(142, 76%, 75%); }
+html[data-theme="dark"] .admin .ct-bank { color: hsl(0, 74%, 72%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .ct-badge { color: hsl(26, 90%, 75%); background: hsl(48, 45%, 17%); }
+html[data-theme="dark"] .admin .ct-table th { background: hsl(214, 33%, 17%); }
+html[data-theme="dark"] .admin .pf-card { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .pf-role { color: hsl(26, 90%, 75%); background: hsl(48, 45%, 17%); }
+html[data-theme="dark"] .admin table:not(.plan-table) > thead > tr > th { border-right-color: hsla(220, 25%, 24%, 0.16) !important; }
 @media (max-width: 1080px) {
 html[data-theme="dark"] .admin .nav { background: hsl(220, 30%, 14%); }
 }

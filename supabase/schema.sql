@@ -1551,6 +1551,46 @@ language sql stable security invoker set search_path = public as $$
                                     and not exists (select 1 from public.expenses e where e.bank_transaction_id = t.id)));
 $$;
 
+-- ===== Thông tin cá nhân (ảnh đại diện) =====
+alter table public.staff_roles add column if not exists avatar_path text;
+
+-- Kho ảnh đại diện (công khai để hiện ảnh nhanh; mỗi người chỉ ghi được vào thư mục của chính mình)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "avatars insert own" on storage.objects;
+drop policy if exists "avatars update own" on storage.objects;
+drop policy if exists "avatars delete own" on storage.objects;
+create policy "avatars insert own" on storage.objects for insert to authenticated
+  with check (bucket_id = 'avatars' and split_part(name, '/', 1) = auth.uid()::text);
+create policy "avatars update own" on storage.objects for update to authenticated
+  using (bucket_id = 'avatars' and split_part(name, '/', 1) = auth.uid()::text);
+create policy "avatars delete own" on storage.objects for delete to authenticated
+  using (bucket_id = 'avatars' and split_part(name, '/', 1) = auth.uid()::text);
+
+-- Tự cập nhật hồ sơ: ảnh đại diện; họ tên (trừ lái xe — tên lái xe gắn với các đơn đã giao, Admin đổi ở trang Tài khoản)
+create or replace function public.update_my_profile(p_full_name text, p_avatar_path text)
+returns void language plpgsql security definer set search_path = public as $$
+declare v_role text; v_name text := nullif(trim(coalesce(p_full_name, '')), '');
+begin
+  select role into v_role from public.staff_roles where user_id = auth.uid();
+  if v_role is null then
+    raise exception 'Tài khoản chưa được phân quyền.';
+  end if;
+  if p_avatar_path is not null and p_avatar_path <> '' and split_part(p_avatar_path, '/', 1) <> auth.uid()::text then
+    raise exception 'Ảnh đại diện không hợp lệ.';
+  end if;
+  update public.staff_roles
+     set avatar_path = nullif(p_avatar_path, ''),
+         full_name = case when v_role = 'driver' or v_name is null then full_name else v_name end
+   where user_id = auth.uid();
+end;
+$$;
+revoke execute on function public.update_my_profile(text, text) from public, anon;
+grant execute on function public.update_my_profile(text, text) to authenticated;
+
 -- ===== Phân quyền theo vai trò (giữ ở CUỐI file) =====
 --   driver      = Lái xe: chỉ thấy chuyến của mình (không đổi)
 
