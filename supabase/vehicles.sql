@@ -24,5 +24,5 @@ create policy "staff full access" on public.vehicles
 insert into public.vehicles (plate, volume_cbm, payload_tons, length_m, width_m, height_m) values
   ('29E-373.03', 14, 3.5, 4.31, 1.94, 1.85),
   ('29E-196.04', 14, 3.5, 4.31, 1.94, 1.85),
-  ('29E-373.23', 25, 7.7, 6.30, 2.12, 2.05)
+  ('29E-378.23', 25, 7.7, 6.30, 2.12, 2.05)
 on conflict (plate) do nothing;
