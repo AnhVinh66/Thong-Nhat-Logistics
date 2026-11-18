@@ -8,6 +8,7 @@ import { fmtTime } from '../../../lib/bank';
 import Modal from '../../../components/staff/Modal';
 import DateInput from '../../../components/DateInput';
 import ExpenseForm from '../../../components/staff/ExpenseForm';
+import DropZone from '../../../components/staff/DropZone';
 import { useRole } from '../../../components/staff/Role';
 import { compress } from '../../../components/staff/DeliveryDocs';
 
@@ -143,9 +144,8 @@ function Detail({ row, recon, onClose, onChanged, onEdit, onStatus }) {
 
       <div className="doc-head" style={{ marginTop: 18 }}>
         <h3 style={{ margin: 0 }}>Hoá đơn / ảnh thanh toán ({photos.length})</h3>
-        <label className="btn btn-outline sm" htmlFor="x-add" style={{ cursor: 'pointer' }}>{busy ? 'Đang tải...' : '+ Gắn thêm ảnh'}</label>
-        <input id="x-add" type="file" accept="image/*" multiple hidden disabled={busy} onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
       </div>
+      <DropZone id="x-add" wide disabled={busy} onFiles={add} label={busy ? 'Đang tải ảnh lên...' : 'Gắn thêm ảnh'} />
       {msg && <p className={msg.ok ? 'ok-msg' : 'err'} role="status">{msg.text}</p>}
       {photos.length ? (
         <ul className="thumbs">

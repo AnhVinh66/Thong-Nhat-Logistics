@@ -9,6 +9,7 @@ import Modal from '../../../components/staff/Modal';
 import DateInput from '../../../components/DateInput';
 import { compress } from '../../../components/staff/DeliveryDocs';
 import CollectionForm from '../../../components/staff/CollectionForm';
+import DropZone from '../../../components/staff/DropZone';
 import { useRole } from '../../../components/staff/Role';
 
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
@@ -153,11 +154,8 @@ function Detail({ row, recon, onClose, onChanged, onEdit }) {
 
       <div className="doc-head" style={{ marginTop: 18 }}>
         <h3 style={{ margin: 0 }}>Ảnh bill ({photos.length})</h3>
-        {canAdd && (<>
-<label className="btn btn-outline sm" htmlFor="d-add" style={{ cursor: 'pointer' }}>{busy ? 'Đang tải...' : '+ Gắn thêm ảnh'}</label>
-        <input id="d-add" type="file" accept="image/*" multiple hidden disabled={busy} onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
-</>)}
       </div>
+      {canAdd && <DropZone id="d-add" wide disabled={busy} onFiles={add} label={busy ? 'Đang tải ảnh lên...' : 'Gắn thêm ảnh bill'} />}
       {msg && <p className={msg.ok ? 'ok-msg' : 'err'} role="status">{msg.text}</p>}
       {photos.length ? (
         <ul className="thumbs">

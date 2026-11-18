@@ -5,6 +5,7 @@ import {
   supabase, displayLogin, expenseCode, expenseTypes, needsVehicle, EXPENSE_BUCKET,
 } from '../../lib/supabase';
 import Modal from './Modal';
+import DropZone from './DropZone';
 import MoneyInput from './MoneyInput';
 import DateInput from '../DateInput';
 import TypePicker from './TypePicker';
@@ -200,8 +201,7 @@ export default function ExpenseForm({ onClose, onSaved, edit = null }) {
         <div className="field">
           <span className="label-like">Hoá đơn / Ảnh thanh toán</span>
           <div className="bill-row">
-            <label className="btn btn-outline sm" htmlFor="e-files">+ Gắn ảnh</label>
-            <input id="e-files" ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addFiles(e.target.files)} />
+            <DropZone id="e-files" onFiles={addFiles} />
             {files.length === 0 && shownOld.length === 0 && <span className="muted small">Chưa có ảnh (có thể gắn nhiều ảnh)</span>}
             <ul className="bill-thumbs">
               {shownOld.map((p, i) => (

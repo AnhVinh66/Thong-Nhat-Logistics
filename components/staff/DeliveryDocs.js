@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, fmtDateTime } from '../../lib/supabase';
 import Modal from './Modal';
+import DropZone from './DropZone';
 
 export const DOCS_BUCKET = 'delivery-docs';
 
@@ -69,11 +70,9 @@ function KindSection({ kind, photos, urls, busy, onUpload, onDelete, readOnly })
           <label htmlFor={camId} className="btn btn-primary sm">Chụp ảnh</label>
           <input id={camId} type="file" accept="image/*" capture="environment" hidden disabled={busy}
             onChange={(e) => { onUpload(kind.id, e.target.files); e.target.value = ''; }} />
-          <label htmlFor={inputId} className="btn btn-outline sm">Chọn ảnh</label>
-          <input id={inputId} type="file" accept="image/*" multiple hidden disabled={busy}
-            onChange={(e) => { onUpload(kind.id, e.target.files); e.target.value = ''; }} />
         </div>}
       </div>
+      {!readOnly && <DropZone id={inputId} wide disabled={busy} onFiles={(files) => onUpload(kind.id, files)} label={`Chọn ảnh ${kind.label.toLowerCase()}`} />}
       {photos.length ? (
         <ul className="thumbs">
           {photos.map((p) => (

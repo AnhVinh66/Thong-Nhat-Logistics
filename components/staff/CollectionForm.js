@@ -5,6 +5,7 @@ import {
   supabase, vnd, orderCode, stopCode, customerCode, collectionCode, commas, displayLogin, BILLS_BUCKET,
 } from '../../lib/supabase';
 import Modal from './Modal';
+import DropZone from './DropZone';
 import DateInput from '../DateInput';
 import MoneyInput from './MoneyInput';
 import { compress } from './DeliveryDocs';
@@ -327,8 +328,7 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
         <div className="field">
           <span className="label-like">Hình ảnh bill thu tiền</span>
           <div className="bill-row">
-            <label className="btn btn-outline sm" htmlFor="c-files">+ Gắn ảnh bill</label>
-            <input id="c-files" ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addFiles(e.target.files)} />
+            <DropZone id="c-files" onFiles={addFiles} />
             {files.length === 0 && shownOld.length === 0 && <span className="muted small">Chưa có ảnh (không bắt buộc)</span>}
             <ul className="bill-thumbs">
               {shownOld.map((p, i) => (

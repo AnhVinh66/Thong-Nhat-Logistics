@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { supabase, vnd, orderCode } from '../../../lib/supabase';
+import { supabase, vnd, orderCode, stopCode } from '../../../lib/supabase';
 import { drivers as defaultDrivers } from '../../../lib/site';
 import { useRole } from '../../../components/staff/Role';
 import Modal from '../../../components/staff/Modal';
@@ -16,7 +16,7 @@ const mondayOf = (iso) => { const d = parse(iso); d.setDate(d.getDate() - ((d.ge
 const dm = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const dmy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const DOW = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, trip_seq, trip_period, status, fee, customers(name), order_stops(address, stop_no, position, customers(name))';
+const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, trip_seq, trip_period, status, fee, customers(name), order_stops(id, address, stop_no, position, status, customers(name))';
 
 // Thứ tự trong một ô (xe + ngày): theo số chuyến đã xếp, chuyến chưa có số xếp sau theo mã đơn
 const PERIODS = [
@@ -240,10 +240,37 @@ export default function Page() {
                               onClick={() => openDlg({ order: o })}
                               title={editPlan ? 'Bấm để sửa chuyến' : undefined}
                             >
-                              <span className="trip-cus">{whoOf(o)}</span>
-                              <span className="trip-route">{routeOf(o)}</span>
-                              {o.driver && <span className="trip-drv">{o.driver}</span>}
-                              <span className={`trip-status ${o.status === 'done' ? 'done' : 'open'}`}>{o.status === 'done' ? '✓ Hoàn thành' : 'Chưa hoàn thành'}</span>
+                              {o.order_type === 'multi' ? (() => {
+                                const sts = [...(o.order_stops || [])].sort((a, b) => (a.stop_no ?? a.position) - (b.stop_no ?? b.position));
+                                const doneN = sts.filter((s) => s.status === 'done').length;
+                                return (
+                                  <>
+                                    <span className="trip-route">{o.pickup} → {sts.length} điểm trả</span>
+                                    {o.driver && <span className="trip-drv">{o.driver}</span>}
+                                    <ul className="trip-stops">
+                                      {sts.map((s) => (
+                                        <li key={s.id || s.stop_no} className={s.status === 'done' ? 'done' : 'open'}>
+                                          <span className="ts-top">
+                                            <span className="ts-code">{stopCode(o.order_no, s.stop_no)}</span>
+                                            <span className="ts-state">{s.status === 'done' ? '✓ Xong' : 'Chưa xong'}</span>
+                                          </span>
+                                          <span className="ts-name">{s.customers?.name}{s.address ? ` – ${s.address}` : ''}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                    <span className={`trip-status ${o.status === 'done' ? 'done' : 'open'}`}>
+                                      {o.status === 'done' ? '✓ Hoàn thành' : `Chưa hoàn thành · ${doneN}/${sts.length} điểm`}
+                                    </span>
+                                  </>
+                                );
+                              })() : (
+                                <>
+                                  <span className="trip-cus">{whoOf(o)}</span>
+                                  <span className="trip-route">{routeOf(o)}</span>
+                                  {o.driver && <span className="trip-drv">{o.driver}</span>}
+                                  <span className={`trip-status ${o.status === 'done' ? 'done' : 'open'}`}>{o.status === 'done' ? '✓ Hoàn thành' : 'Chưa hoàn thành'}</span>
+                                </>
+                              )}
                             </button>
                           </div>
                           </Fragment>

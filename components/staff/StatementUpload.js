@@ -6,6 +6,7 @@ import {
   FIELDS, detectMapping, guessHeaderRow, parseRows, readStatementFile, columnLabels, buildMatcher, norm, fmtTime,
 } from '../../lib/bank';
 import Modal from './Modal';
+import DropZone from './DropZone';
 
 const BATCH = 500;
 
@@ -192,10 +193,15 @@ export default function StatementUpload({ bank, onClose, onDone }) {
     <Modal title={`Tải sao kê – ${bank.bank_name} · ${bank.account_number}`} onClose={onClose} width={900}>
       <div className="form">
         <div className="up-drop">
-          <input ref={inputRef} type="file" accept=".xlsx,.csv,.txt" hidden onChange={(e) => onFile(e.target.files?.[0])} />
-          <button type="button" className="btn btn-primary" onClick={() => inputRef.current?.click()}>
-            {file ? 'Chọn file khác' : 'Chọn file sao kê (.xlsx hoặc .csv)'}
-          </button>
+          <DropZone
+            id="st-file"
+            wide
+            accept=".xlsx,.csv,.txt"
+            multiple={false}
+            onFiles={(files) => onFile(files[0])}
+            label={file ? 'Chọn file khác' : 'Chọn file sao kê (.xlsx hoặc .csv)'}
+            hint="hoặc kéo thả file sao kê vào đây"
+          />
           <span className="muted small">{file ? file.name : 'Tải file sao kê xuất từ internet banking, có thể tải lại cùng khoảng thời gian, giao dịch trùng sẽ tự bỏ qua.'}</span>
         </div>
 
