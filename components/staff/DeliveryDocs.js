@@ -58,21 +58,21 @@ export async function uploadDocs(orderId, stopId, kind, fileList) {
   return { ok, total: files.length };
 }
 
-function KindSection({ kind, photos, urls, busy, onUpload, onDelete }) {
+function KindSection({ kind, photos, urls, busy, onUpload, onDelete, readOnly }) {
   const inputId = `up-${kind.id}`;
   const camId = `cam-${kind.id}`;
   return (
     <section className="doc-section">
       <div className="doc-head">
         <h3>{kind.label} <span className="muted small">({photos.length})</span></h3>
-        <div className="doc-actions">
+        {!readOnly && <div className="doc-actions">
           <label htmlFor={camId} className="btn btn-primary sm">Chụp ảnh</label>
           <input id={camId} type="file" accept="image/*" capture="environment" hidden disabled={busy}
             onChange={(e) => { onUpload(kind.id, e.target.files); e.target.value = ''; }} />
           <label htmlFor={inputId} className="btn btn-outline sm">Chọn ảnh</label>
           <input id={inputId} type="file" accept="image/*" multiple hidden disabled={busy}
             onChange={(e) => { onUpload(kind.id, e.target.files); e.target.value = ''; }} />
-        </div>
+        </div>}
       </div>
       {photos.length ? (
         <ul className="thumbs">
@@ -87,7 +87,7 @@ function KindSection({ kind, photos, urls, busy, onUpload, onDelete }) {
                 <div className="thumb-ph">Đang tải...</div>
               )}
               <span className="thumb-date">{fmtDateTime(p.created_at)}</span>
-              <button type="button" className="thumb-del" onClick={() => onDelete(p)} aria-label="Xoá ảnh này">✕</button>
+              {!readOnly && <button type="button" className="thumb-del" onClick={() => onDelete(p)} aria-label="Xoá ảnh này">✕</button>}
             </li>
           ))}
         </ul>
@@ -98,7 +98,7 @@ function KindSection({ kind, photos, urls, busy, onUpload, onDelete }) {
   );
 }
 
-export default function DeliveryDocs({ orderId, stopId, title, onClose, onChanged }) {
+export default function DeliveryDocs({ orderId, stopId, title, onClose, onChanged, readOnly = false }) {
   const [photos, setPhotos] = useState([]);
   const [urls, setUrls] = useState({});
   const [loading, setLoading] = useState(true);
@@ -174,6 +174,7 @@ export default function DeliveryDocs({ orderId, stopId, title, onClose, onChange
               busy={busy}
               onUpload={upload}
               onDelete={remove}
+              readOnly={readOnly}
             />
           ))}
         </div>

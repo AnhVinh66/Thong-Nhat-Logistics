@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, displayLogin, fmtDateTime } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
+import { roleLabel, roleDesc } from '../../../components/staff/Role';
 
-const roleLabel = { staff: 'Văn phòng', driver: 'Lái xe' };
+const ROLE_OPTIONS = ['dispatcher', 'accountant', 'staff', 'driver'];
 const blank = { name: '', username: '', password: '', role: 'driver' };
 
 // Gợi ý tên đăng nhập từ họ tên: "Nguyễn Thế Trang" -> "trang"
@@ -132,11 +133,11 @@ export default function Page() {
             <div className="field">
               <label htmlFor="n-role">Vai trò</label>
               <select id="n-role" value={form.role} onChange={set('role')}>
-                <option value="driver">Lái xe</option>
-                <option value="staff">Văn phòng (toàn quyền)</option>
+                {ROLE_OPTIONS.map((k) => <option key={k} value={k}>{roleLabel[k]}</option>)}
               </select>
             </div>
           </div>
+          <p className="muted small" style={{ margin: 0 }}>{roleDesc[form.role]}.</p>
           {msg && <p className={msg.ok ? 'ok-msg' : 'err'} role="status">{msg.text}</p>}
           <div><button className="btn btn-primary" disabled={busy}>{busy ? 'Đang tạo...' : 'Tạo tài khoản'}</button></div>
         </form>
@@ -181,10 +182,10 @@ export default function Page() {
             <div className="field">
               <label htmlFor="e-role">Vai trò</label>
               <select id="e-role" value={editing.role} disabled={editing.self} onChange={(e) => setEditing((s) => ({ ...s, role: e.target.value }))}>
-                <option value="driver">Lái xe</option>
-                <option value="staff">Văn phòng (toàn quyền)</option>
+                {ROLE_OPTIONS.map((k) => <option key={k} value={k}>{roleLabel[k]}</option>)}
                 <option value="none">Thu hồi quyền (không xem được gì)</option>
               </select>
+              <p className="muted small" style={{ margin: '4px 0 0' }}>{roleDesc[editing.role]}.</p>
             </div>
             <div className="field">
               <label htmlFor="e-pass">Mật khẩu mới <span className="muted small" style={{ color: 'var(--muted)' }}>(để trống nếu không đổi)</span></label>

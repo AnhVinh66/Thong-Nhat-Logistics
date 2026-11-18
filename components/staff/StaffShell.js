@@ -8,6 +8,7 @@ import Logo from '../Logo';
 import Icon from '../Icon';
 import DriverApp from './DriverApp';
 import InstallApp, { useServiceWorker } from './InstallApp';
+import { RoleProvider, canView, roleLabel } from './Role';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -118,10 +119,19 @@ export default function StaffShell({ children }) {
     return <DriverApp driverName={role.driver_name} email={session.user.email} onLogout={() => supabase.auth.signOut()} />;
   }
 
+  const r = role.role;
   return (
-    <AdminLayout pathname={pathname} login={displayLogin(session.user.email)} onLogout={() => supabase.auth.signOut()}>
-      {children}
-    </AdminLayout>
+    <RoleProvider role={r}>
+      <AdminLayout role={r} pathname={pathname} login={displayLogin(session.user.email)} onLogout={() => supabase.auth.signOut()}>
+        {canView(r, pathname) ? children : (
+          <div className="card">
+            <h1 style={{ fontSize: '1.4rem' }}>Bạn không có quyền truy cập mục này</h1>
+            <p className="muted">Vai trò hiện tại: <strong>{roleLabel[r]}</strong>. Liên hệ Quản trị nếu cần thêm quyền.</p>
+            <Link href="/nhan-vien/" className="btn btn-primary">Về Tổng quan</Link>
+          </div>
+        )}
+      </AdminLayout>
+    </RoleProvider>
   );
 }
 
@@ -155,9 +165,12 @@ const sections = [
 ];
 
 // Bố cục quản trị: menu cố định bên trái (máy tính), thu gọn thành nút ☰ (điện thoại)
-function AdminLayout({ pathname, login, onLogout, children }) {
+function AdminLayout({ role, pathname, login, onLogout, children }) {
   const [open, setOpen] = useState(false);
   const isActive = (h) => (h === '/nhan-vien/' ? pathname.replace(/\/$/, '') === '/nhan-vien' : pathname.startsWith(h));
+  const visible = sections
+    .map((s) => ({ ...s, links: s.links.filter((l) => canView(role, l.href)) }))
+    .filter((s) => s.links.length);
   const current = sections.flatMap((s) => s.links).find((l) => isActive(l.href));
 
   // Đóng menu khi chuyển trang hoặc bấm Esc
@@ -177,7 +190,7 @@ function AdminLayout({ pathname, login, onLogout, children }) {
           <button className="side-close" onClick={() => setOpen(false)} aria-label="Đóng menu"><Icon name="close" size={22} /></button>
         </div>
         <nav className="side-nav">
-          {sections.map((s) => (
+          {visible.map((s) => (
             <div className="side-group" key={s.title}>
               <p className="side-title">{s.title}</p>
               {s.links.map((l) => (
@@ -200,7 +213,7 @@ function AdminLayout({ pathname, login, onLogout, children }) {
           </a>
           <div className="side-user">
             <span className="side-avatar" aria-hidden="true">{(login[0] || '?').toUpperCase()}</span>
-            <span className="side-login" title={login}>{login}</span>
+            <span className="side-login" title={login}>{login}<small className="side-role">{roleLabel[role]}</small></span>
           </div>
           <button className="side-link side-logout" onClick={onLogout}>
             <Icon name="logout" size={20} /><span>Đăng xuất</span>

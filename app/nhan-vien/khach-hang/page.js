@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, customerTypes, vnd, customerCode, fmtDate, orderCode, stopCode } from '../../../lib/supabase';
+import { useRole } from '../../../components/staff/Role';
 import Modal from '../../../components/staff/Modal';
 
 const blank = { name: '', phone: '', email: '', address: '', company: '', tax_code: '', type: 'le', note: '' };
@@ -111,6 +112,7 @@ function CustomerDetail({ d }) {
 }
 
 export default function Page() {
+  const { canEditOps } = useRole();
   const [rows, setRows] = useState([]);
   const [debts, setDebts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -207,7 +209,7 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Khách hàng</h1>
-        <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm khách hàng</button>
+        {canEditOps && <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm khách hàng</button>}
       </div>
 
       <div className="toolbar">
@@ -283,8 +285,8 @@ export default function Page() {
                 <td className="c-act c-act3">
                   <div className="actions">
                     <a className="btn btn-primary sm" href={`/nhan-vien/khach-hang/chi-tiet/?id=${r.id}`}>Chi tiết</a>
-                    <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>
-                    <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
+                    {canEditOps && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
+                    {canEditOps && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                   </div>
                 </td>
               </tr>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRole } from '../../../components/staff/Role';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, vnd } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
@@ -63,6 +64,7 @@ const size = (r) =>
     : '';
 
 export default function Page() {
+  const { canEditOps } = useRole();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -194,7 +196,7 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Danh sách xe</h1>
-        <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm xe</button>
+        {canEditOps && <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm xe</button>}
       </div>
 
       <div className="toolbar">
@@ -276,8 +278,8 @@ export default function Page() {
                   );
                 })()}
                 <td className="actions">
-                  <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>
-                  <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
+                  {canEditOps && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
+                  {canEditOps && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                 </td>
               </tr>
             ))}

@@ -7,6 +7,7 @@ import FeePopup from '../../../components/staff/FeePopup';
 import { drivers as defaultDrivers } from '../../../lib/site';
 import Modal from '../../../components/staff/Modal';
 import DateInput from '../../../components/DateInput';
+import { useRole } from '../../../components/staff/Role';
 import DeliveryDocs, { removeDocFiles } from '../../../components/staff/DeliveryDocs';
 
 const blankStop = { customer_id: '', address: '', cargo: '', weight: '', fee: '', toll_fee: '', parking_fee: '' };
@@ -33,6 +34,7 @@ function Extras({ toll, park }) {
 const sortedStops = (r) => [...(r.order_stops || [])].sort((a, b) => a.position - b.position);
 
 export default function Page() {
+  const { canEditOps } = useRole();
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -365,14 +367,14 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Đơn hàng</h1>
-        <button
+        {canEditOps && <button
           className="btn btn-primary"
           onClick={() => openEdit(null)}
           disabled={!customers.length}
           title={!customers.length ? 'Hãy thêm khách hàng trước' : undefined}
         >
           + Thêm đơn hàng
-        </button>
+        </button>}
       </div>
       {!loading && !customers.length && <p className="muted">Cần có ít nhất một khách hàng trước khi tạo đơn hàng.</p>}
 
@@ -422,8 +424,8 @@ export default function Page() {
                           Chứng từ ({photoCounts[`${r.id}|`] || 0})
                         </button>
                       )}
-                      <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>
-                      <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
+                      {canEditOps && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
+                      {canEditOps && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                     </td>
                   </tr>
                   {isMulti && (
@@ -479,6 +481,7 @@ export default function Page() {
           title={docsFor.title}
           onClose={() => setDocsFor(null)}
           onChanged={loadCounts}
+          readOnly={!canEditOps}
         />
       )}
 

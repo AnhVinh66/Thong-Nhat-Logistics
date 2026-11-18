@@ -785,3 +785,5 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .cd-table tfoot td { background: #f4f7fb; border-top: 2px solid var(--line); }
 .cd-table .cd-route { max-width: 420px; }
 .st-none { background: #f1f5f9; color: #475569; }
+
+.side-role { display: block; font-size: .72rem; opacity: .7; margin-top: 1px; }
