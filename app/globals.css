@@ -835,3 +835,12 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .o-status .muted { display: block; margin-top: 3px; }
 
 .topbar-cms { margin-left: 4px; padding-left: 14px; border-left: 1px solid rgba(255,255,255,.25); font-weight: 700; }
+
+.trip-band { font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; margin: 2px 0 5px; display: inline-block; }
+.trip-band.band-am { background: #fff3c4; color: #8a5a00; }
+.trip-band.band-pm { background: #e1d9ff; color: #4a2fb0; }
+.trip-band.band-none { background: #eef1f6; color: var(--muted); }
+.seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; width: fit-content; }
+.seg-btn { font: inherit; font-weight: 600; font-size: .92rem; padding: 8px 16px; border: 0; background: #fff; cursor: pointer; color: var(--navy); }
+.seg-btn + .seg-btn { border-left: 1.5px solid var(--line); }
+.seg-btn.on { background: var(--navy); color: #fff; }

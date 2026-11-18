@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { supabase, vnd, orderCode } from '../../../lib/supabase';
 import { drivers as defaultDrivers } from '../../../lib/site';
@@ -16,10 +16,18 @@ const mondayOf = (iso) => { const d = parse(iso); d.setDate(d.getDate() - ((d.ge
 const dm = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const dmy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const DOW = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, trip_seq, fee, customers(name), order_stops(address, stop_no, position, customers(name))';
+const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, trip_seq, trip_period, fee, customers(name), order_stops(address, stop_no, position, customers(name))';
 
 // Thứ tự trong một ô (xe + ngày): theo số chuyến đã xếp, chuyến chưa có số xếp sau theo mã đơn
-const bySeq = (a, b) => (a.trip_seq ?? 1e9) - (b.trip_seq ?? 1e9) || a.order_no - b.order_no;
+const PERIODS = [
+  { key: 'am', label: 'Sáng' },
+  { key: 'pm', label: 'Chiều' },
+  { key: '', label: 'Chưa chọn buổi' },
+];
+const periodLabel = (k) => (k === 'am' ? 'Sáng' : k === 'pm' ? 'Chiều' : '');
+const rank = (o) => (o.trip_period === 'am' ? 0 : o.trip_period === 'pm' ? 1 : 2);
+// Thứ tự trong một ô: Sáng -> Chiều -> chưa chọn buổi; trong mỗi buổi theo số chuyến đã xếp
+const bySeq = (a, b) => rank(a) - rank(b) || (a.trip_seq ?? 1e9) - (b.trip_seq ?? 1e9) || a.order_no - b.order_no;
 
 function routeOf(o) {
   if (o.order_type === 'multi') {
@@ -107,7 +115,7 @@ export default function Page() {
 
   const move = (list, i, dir) => {
     const j = i + dir;
-    if (j < 0 || j >= list.length) return;
+    if (j < 0 || j >= list.length || (list[j].trip_period || '') !== (list[i].trip_period || '')) return; // chỉ đổi thứ tự trong cùng buổi
     const ids = list.map((o) => o.id);
     [ids[i], ids[j]] = [ids[j], ids[i]];
     run(() => supabase.rpc('plan_reorder', { p_orders: ids }));
@@ -119,7 +127,9 @@ export default function Page() {
     const pl = order?.plate || plate;
     const dt = order?.ship_date || date;
     const cellList = pl && dt ? (cells[`${pl}|${dt}`] || []) : [];
-    const idx = order ? cellList.findIndex((o) => o.id === order.id) : -1;
+    const per = order ? order.trip_period || '' : (cellList.some((o) => o.trip_period === 'am') ? 'pm' : 'am');
+    const band = cellList.filter((o) => (o.trip_period || '') === per);
+    const idx = order ? band.findIndex((o) => o.id === order.id) : -1;
     const sameDriver = cellList[0]?.driver || '';
     setDlg({
       order,
@@ -127,12 +137,13 @@ export default function Page() {
       plate: order?.plate || plate,
       date: order?.ship_date || date,
       driver: order?.driver || sameDriver,
+      period: per,
       pos: idx >= 0 ? idx + 1 : null,
     });
   }
 
   // Số chuyến đã có trong ô đích (không tính chính đơn đang sửa) -> các vị trí chọn được
-  const target = dlg && dlg.plate && dlg.date ? (cells[`${dlg.plate}|${dlg.date}`] || []).filter((o) => o.id !== dlg.orderId) : [];
+  const target = dlg && dlg.plate && dlg.date ? (cells[`${dlg.plate}|${dlg.date}`] || []).filter((o) => o.id !== dlg.orderId && (o.trip_period || '') === (dlg.period || '')) : [];
 
   async function saveDlg(e) {
     e.preventDefault();
@@ -141,7 +152,7 @@ export default function Page() {
     if (!dlg.plate) return setDlgErr('Vui lòng chọn xe.');
     if (!dlg.date) return setDlgErr('Vui lòng chọn ngày chạy.');
     const pos = dlg.pos && dlg.pos <= target.length ? dlg.pos : null; // null = cuối ngày
-    const ok = await run(() => supabase.rpc('plan_assign', { p_order: dlg.orderId, p_plate: dlg.plate, p_driver: dlg.driver || null, p_date: dlg.date, p_pos: pos }), 'Đã lưu kế hoạch chạy xe.');
+    const ok = await run(() => supabase.rpc('plan_assign', { p_order: dlg.orderId, p_plate: dlg.plate, p_driver: dlg.driver || null, p_date: dlg.date, p_pos: pos, p_period: dlg.period || null }), 'Đã lưu kế hoạch chạy xe.');
     if (ok) setDlg(null);
   }
 
@@ -176,7 +187,7 @@ export default function Page() {
       </div>
       <p className="muted" style={{ marginTop: 0 }}>
         {weekCount} chuyến trong tuần · {pending.length} đơn chưa xếp xe.
-        {editPlan ? ' Bấm vào một chuyến để đổi xe, ngày, tài xế; dùng ▲ ▼ để đổi thứ tự chạy trong ngày.' : ' Bạn chỉ có quyền xem kế hoạch.'}
+        {editPlan ? ' Bấm vào một chuyến để đổi xe, ngày, tài xế; dùng ▲ ▼ để đổi thứ tự trong cùng buổi (Sáng / Chiều).' : ' Bạn chỉ có quyền xem kế hoạch.'}
       </p>
       {notice && <p className={notice.ok ? 'ok-msg' : 'err'} role="status" style={{ marginBottom: 10 }}>{notice.text}</p>}
 
@@ -207,7 +218,11 @@ export default function Page() {
                     return (
                       <td key={d} className={d === today ? 'today' : undefined}>
                         {list.map((o, i) => (
-                          <div key={o.id} className="trip">
+                          <Fragment key={o.id}>
+                            {(i === 0 || (list[i - 1].trip_period || '') !== (o.trip_period || '')) && (list.some((x) => x.trip_period) || o.trip_period) && (
+                              <div className={`trip-band band-${o.trip_period || 'none'}`}>{periodLabel(o.trip_period) || 'Chưa chọn buổi'}</div>
+                            )}
+                          <div className="trip">
                             <div className="trip-head">
                               <span className="trip-no" title={`Chuyến thứ ${i + 1} trong ngày`}>{i + 1}</span>
                               <strong>{orderCode(o.order_no)}</strong>
@@ -230,6 +245,7 @@ export default function Page() {
                               {o.driver && <span className="trip-drv">{o.driver}</span>}
                             </button>
                           </div>
+                          </Fragment>
                         ))}
                         {!list.length && !editPlan && <span className="muted small">—</span>}
                         {editPlan && (
@@ -296,6 +312,21 @@ export default function Page() {
                 <DateInput id="p-date" value={dlg.date} onChange={(v) => setDlg((s) => ({ ...s, date: v, pos: null }))} />
               </div>
             </div>
+            <div className="field">
+              <label>Buổi chạy</label>
+              <div className="seg" role="radiogroup" aria-label="Buổi chạy">
+                {PERIODS.map((p) => (
+                  <button
+                    key={p.key || 'none'}
+                    type="button"
+                    role="radio"
+                    aria-checked={(dlg.period || '') === p.key}
+                    className={`seg-btn ${(dlg.period || '') === p.key ? 'on' : ''}`}
+                    onClick={() => setDlg((s) => ({ ...s, period: p.key, pos: null }))}
+                  >{p.label}</button>
+                ))}
+              </div>
+            </div>
             <div className="grid-2">
               <div className="field">
                 <label htmlFor="p-driver">Tài xế</label>
@@ -306,11 +337,11 @@ export default function Page() {
                 </select>
               </div>
               <div className="field">
-                <label htmlFor="p-pos">Thứ tự chạy trong ngày</label>
+                <label htmlFor="p-pos">Thứ tự chạy trong {dlg.period === 'am' ? 'buổi sáng' : dlg.period === 'pm' ? 'buổi chiều' : 'ngày'}</label>
                 <select id="p-pos" value={dlg.pos && dlg.pos <= target.length ? dlg.pos : target.length + 1} onChange={(e) => setDlg((s) => ({ ...s, pos: Number(e.target.value) }))}>
                   {Array.from({ length: target.length + 1 }, (_, i) => (
                     <option key={i + 1} value={i + 1}>
-                      Chuyến {i + 1}{i === target.length ? ' (cuối ngày)' : ` (trước ${orderCode(target[i].order_no)})`}
+                      Chuyến {i + 1}{i === target.length ? (dlg.period ? ' (cuối buổi)' : ' (cuối ngày)') : ` (trước ${orderCode(target[i].order_no)})`}
                     </option>
                   ))}
                 </select>
