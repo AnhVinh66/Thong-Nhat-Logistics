@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, vnd, orderCode, stopCode } from '../../../lib/supabase';
+import { supabase, vnd, orderCode, stopCode, fmtDate } from '../../../lib/supabase';
 import MoneyInput from '../../../components/staff/MoneyInput';
 import FeePopup from '../../../components/staff/FeePopup';
 import { drivers as defaultDrivers } from '../../../lib/site';
@@ -47,7 +47,8 @@ function Extras({ toll, park }) {
 const sortedStops = (r) => [...(r.order_stops || [])].sort((a, b) => a.position - b.position);
 
 export default function Page() {
-  const { addOrder, editOrder, deleteOrder } = useRole();
+  const { addOrder, editOrder, deleteOrder, completeOrder } = useRole();
+  const [fStatus, setFStatus] = useState(''); // '' | incomplete | done
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -75,6 +76,30 @@ export default function Page() {
     });
     setPhotoCounts(m);
   }, []);
+
+  // Đơn đã có đủ chứng từ (biên bản giao nhận hoặc bill) để được Hoàn thành?
+  const hasDocs = (r) => {
+    if (r.order_type === 'multi') {
+      const st = r.order_stops || [];
+      return st.length > 0 && st.every((s) => photoCounts[`${r.id}|${s.id}`] > 0);
+    }
+    return photoCounts[`${r.id}|`] > 0;
+  };
+
+  async function setStatus(r, done) {
+    setNotice(null);
+    if (done && !hasDocs(r)) {
+      setNotice({ ok: false, text: `${orderCode(r.order_no)} chưa thể Hoàn thành: cần có biên bản giao nhận hoặc bill thanh toán${r.order_type === 'multi' ? ' ở mỗi điểm trả' : ''}. Bấm nút Chứng từ để thêm ảnh.` });
+      return;
+    }
+    const { error } = await supabase.rpc('set_order_status', { p_order: r.id, p_done: done });
+    if (error) {
+      setNotice({ ok: false, text: error.message?.includes('set_order_status') ? 'Chưa bật tính năng Trạng thái. Hãy chạy supabase/order-status.sql trên Supabase.' : error.message || 'Không đổi được trạng thái.' });
+      return;
+    }
+    setNotice({ ok: true, text: `${orderCode(r.order_no)}: ${done ? 'Hoàn thành' : 'Chưa hoàn thành'}.` });
+    load();
+  }
 
   const loadPaid = useCallback(async () => {
     const { data, error } = await supabase.from('collection_items').select('order_id, amount, collections(customer_id)');
@@ -145,13 +170,14 @@ export default function Page() {
 
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return rows;
-    return rows.filter((r) => {
+    const list = fStatus ? rows.filter((r) => (r.status || 'incomplete') === fStatus) : rows;
+    if (!s) return list;
+    return list.filter((r) => {
       const fields = [orderCode(r.order_no), r.customers?.name, r.pickup, r.delivery, r.cargo, r.plate, r.driver];
       sortedStops(r).forEach((st) => fields.push(stopCode(r.order_no, st.stop_no), st.customers?.name, st.address, st.cargo));
       return fields.some((v) => (v || '').toLowerCase().includes(s));
     });
-  }, [rows, q]);
+  }, [rows, q, fStatus]);
 
   const totalFee = useMemo(() => shown.reduce((a, r) => a + Number(r.fee), 0), [shown]);
 
@@ -408,6 +434,11 @@ export default function Page() {
 
       <div className="toolbar">
         <input aria-label="Tìm kiếm" placeholder="Tìm theo mã đơn, khách, tuyến, biển số, tài xế..." value={q} onChange={(e) => setQ(e.target.value)} />
+        <select aria-label="Trạng thái đơn hàng" value={fStatus} onChange={(e) => setFStatus(e.target.value)}>
+          <option value="">Mọi trạng thái</option>
+          <option value="incomplete">Chưa hoàn thành</option>
+          <option value="done">Hoàn thành</option>
+        </select>
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
@@ -416,7 +447,7 @@ export default function Page() {
         <table className="fleet-table staff-table">
           <thead>
             <tr>
-              <th>Mã</th><th>Khách hàng</th><th>Tuyến</th><th>Hàng</th><th>Xe / Tài xế</th><th>Ngày</th>
+              <th>Mã</th><th>Khách hàng</th><th>Tuyến</th><th>Hàng</th><th>Xe / Tài xế</th><th>Ngày</th><th>Trạng thái</th>
               <th className="num">Cước</th><th aria-label="Thao tác"></th>
             </tr>
           </thead>
@@ -439,6 +470,20 @@ export default function Page() {
                     <td>{!isMulti && r.cargo}{!isMulti && r.weight && <div className="muted small">{r.weight}</div>}</td>
                     <td>{r.truck}{(r.plate || r.driver) && <div className="muted small">{[r.plate, r.driver].filter(Boolean).join(' · ')}</div>}</td>
                     <td>{r.ship_date ? r.ship_date.split('-').reverse().join('/') : ''}</td>
+                    <td className="o-status">
+                      <span className={`st-pill ${r.status === 'done' ? 'st-paid' : 'st-pending'}`}>{r.status === 'done' ? 'Hoàn thành' : 'Chưa hoàn thành'}</span>
+                      {completeOrder && r.status !== 'done' && (
+                        <button
+                          className={`btn sm o-done ${hasDocs(r) ? 'btn-primary' : 'btn-outline'}`}
+                          onClick={() => setStatus(r, true)}
+                          title={hasDocs(r) ? 'Đánh dấu đơn đã hoàn thành' : 'Cần có biên bản giao nhận hoặc bill trước'}
+                        >✓ Hoàn thành</button>
+                      )}
+                      {completeOrder && r.status === 'done' && (
+                        <button className="btn btn-outline sm o-done" onClick={() => setStatus(r, false)}>↩ Mở lại</button>
+                      )}
+                      {r.status === 'done' && r.completed_at && <span className="muted small">{fmtDate(r.completed_at)}</span>}
+                    </td>
                     <td className="num">
                       {vnd(r.fee)}
                       <Extras toll={r.toll_fee} park={r.parking_fee} />
@@ -460,7 +505,7 @@ export default function Page() {
                   {isMulti && (
                     <tr className="stops-row">
                       <td></td>
-                      <td colSpan={7}>
+                      <td colSpan={8}>
                         <ol className="stop-list coded">
                           {stops.map((st) => (
                             <li key={st.id}>
@@ -488,13 +533,13 @@ export default function Page() {
                 </Fragment>
               );
             })}
-            {!loading && !shown.length && <tr><td colSpan={8} className="muted">Chưa có đơn hàng nào.</td></tr>}
-            {loading && <tr><td colSpan={8} className="muted">Đang tải...</td></tr>}
+            {!loading && !shown.length && <tr><td colSpan={9} className="muted">Chưa có đơn hàng nào.</td></tr>}
+            {loading && <tr><td colSpan={9} className="muted">Đang tải...</td></tr>}
           </tbody>
           {shown.length > 0 && (
             <tfoot>
               <tr>
-                <td colSpan={6}><strong>Tổng ({shown.length} đơn)</strong></td>
+                <td colSpan={7}><strong>Tổng ({shown.length} đơn)</strong></td>
                 <td className="num"><strong>{vnd(totalFee)}</strong></td>
                 <td></td>
               </tr>

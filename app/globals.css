@@ -827,3 +827,9 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .trip-add:hover { border-color: var(--orange); color: var(--navy); }
 
 .login-card .logo-img { height: 88px; }
+
+/* ===== Trạng thái đơn hàng ===== */
+.o-status { white-space: nowrap; }
+.o-status .st-pill { display: inline-block; }
+.o-status .o-done { display: block; margin-top: 5px; }
+.o-status .muted { display: block; margin-top: 3px; }
