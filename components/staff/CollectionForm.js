@@ -198,8 +198,11 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
       if (a > o.remaining) return setErr(`Đơn ${o.code}: số tiền thu vượt quá số còn thiếu (${vnd(o.remaining)}).`);
       items.push({ order_id: o.id, amount: a });
     }
-    if (allocated > amt) return setErr(`Tổng tiền các đơn (${vnd(allocated)}) lớn hơn số tiền thu (${vnd(amt)}).`);
-    if (left > 0 && !window.confirm(`Còn ${vnd(left)} chưa được gán cho đơn hàng nào. Vẫn lưu phiếu thu?`)) return;
+    // Tổng tiền gắn cho các đơn phải đúng bằng số tiền thu thực tế (không thừa, không thiếu)
+    if (!items.length) return setErr('Vui lòng chọn đơn hàng và nhập số tiền thu cho từng đơn. Tổng tiền các đơn phải bằng số tiền thu.');
+    if (allocated !== amt) {
+      return setErr(`Tổng tiền gắn cho các đơn (${vnd(allocated)}) phải bằng số tiền thu thực tế (${vnd(amt)}): đang ${left > 0 ? 'thiếu' : 'thừa'} ${vnd(Math.abs(left))}.`);
+    }
 
     setBusy(true);
     const { data: u } = await supabase.auth.getUser();
@@ -419,7 +422,7 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
               <span>Số tiền thu: <strong>{vnd(amt)}</strong></span>
               <span>Đã gán cho đơn: <strong>{vnd(allocated)}</strong></span>
               <span className={left < 0 ? 'sum-bad' : left > 0 ? 'sum-warn' : 'sum-ok'}>
-                {left < 0 ? `Vượt ${vnd(-left)}` : left > 0 ? `Chưa gán: ${vnd(left)}` : 'Đã gán đủ'}
+                {left < 0 ? `Thừa ${vnd(-left)} – giảm số tiền gắn đơn` : left > 0 ? `Còn thiếu ${vnd(left)} – phải gắn đủ mới tạo được` : '✓ Đã gắn đủ, khớp số tiền thu'}
               </span>
             </div>
           )}

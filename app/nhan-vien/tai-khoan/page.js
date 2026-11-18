@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, displayLogin, fmtDateTime } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
+import RowActions, { ViewBtn, DeleteBtn } from '../../../components/staff/RowActions';
 import { roleLabel, roleDesc } from '../../../components/staff/Role';
 
 const ROLE_OPTIONS = ['sales', 'accountant', 'dispatcher', 'driver', 'staff'];
@@ -157,11 +158,13 @@ export default function Page() {
                 <td>{r.role ? roleLabel[r.role] : <span className="err" style={{ fontSize: '.9rem' }}>Chưa phân quyền</span>}</td>
                 <td className="muted small">{r.last_sign_in_at ? fmtDateTime(r.last_sign_in_at) : 'Chưa đăng nhập'}</td>
                 <td className="actions">
-                  <button className="btn btn-outline sm" onClick={() => {
-                    setEditMsg(null);
-                    setEditing({ user_id: r.user_id, name: r.full_name || '', role: r.role || 'driver', password: '', login: displayLogin(r.email), self: r.user_id === me });
-                  }}>Sửa</button>
-                  {r.user_id !== me && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
+                  <RowActions
+                    view={<ViewBtn label={`Xem / sửa tài khoản ${displayLogin(r.email)}`} onClick={() => {
+                      setEditMsg(null);
+                      setEditing({ user_id: r.user_id, name: r.full_name || '', role: r.role || 'driver', password: '', login: displayLogin(r.email), self: r.user_id === me });
+                    }} />}
+                    del={r.user_id !== me && <DeleteBtn onClick={() => remove(r)} label={`Xoá tài khoản ${displayLogin(r.email)}`} />}
+                  />
                 </td>
               </tr>
             ))}

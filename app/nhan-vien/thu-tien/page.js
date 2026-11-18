@@ -11,6 +11,7 @@ import { compress } from '../../../components/staff/DeliveryDocs';
 import CollectionForm from '../../../components/staff/CollectionForm';
 import DropZone from '../../../components/staff/DropZone';
 import { useRole, roleLabel } from '../../../components/staff/Role';
+import RowActions, { ViewBtn, DeleteBtn } from '../../../components/staff/RowActions';
 
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
 const stamp = fmtDateTime;
@@ -394,9 +395,10 @@ export default function Page() {
               <td className="w-bill">{r.collection_photos?.length ? `${r.collection_photos.length} ảnh` : <span className="muted">—</span>}</td>
               <td className="c-act c-act3">
                 <div className="actions">
-                  <button className="btn btn-outline sm" onClick={() => setOpen(r)}>Xem</button>
-                  {editCollection && <button className="btn btn-outline sm" onClick={() => { setNotice(null); setEditRow(r); }}>Sửa</button>}
-                  {editCollection && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
+                  <RowActions
+                    view={<ViewBtn onClick={() => setOpen(r)} label={`Xem phiếu ${collectionCode(r.collection_no)} (sửa trong cửa sổ xem)`} />}
+                    del={editCollection && <DeleteBtn onClick={() => remove(r)} label={`Xoá phiếu ${collectionCode(r.collection_no)}`} />}
+                  />
                 </div>
               </td>
             </tr>

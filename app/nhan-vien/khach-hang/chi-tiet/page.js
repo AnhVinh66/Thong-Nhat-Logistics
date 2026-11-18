@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRole } from '../../../../components/staff/Role';
 import {
   supabase, vnd, orderCode, stopCode, customerCode, collectionCode, customerTypes, methodLabel, fmtDate,
 } from '../../../../lib/supabase';
@@ -17,6 +18,7 @@ const PAY = {
 const payState = (fee, paid) => (paid >= fee && fee > 0 ? 'paid' : paid > 0 ? 'part' : 'none');
 
 export default function Page() {
+  const { editCustomer } = useRole();
   const [id, setId] = useState(undefined);
   const [customer, setCustomer] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -117,6 +119,9 @@ export default function Page() {
   return (
     <>
       <div className="cd-head">
+        {customer && editCustomer && (
+          <Link href={`/nhan-vien/khach-hang/?edit=${customer.id}`} className="btn btn-outline cd-edit">Sửa thông tin khách hàng</Link>
+        )}
         <div>
           <Link href="/nhan-vien/khach-hang/" className="panel-link" style={{ marginBottom: 4 }}>← Danh sách khách hàng</Link>
           <h1 style={{ fontSize: '1.7rem', margin: '2px 0 4px' }}>

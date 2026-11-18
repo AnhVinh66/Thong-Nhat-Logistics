@@ -1,6 +1,7 @@
 'use client';
 
 import { useRole } from '../../../components/staff/Role';
+import RowActions, { ViewBtn, DeleteBtn } from '../../../components/staff/RowActions';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, vnd } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
@@ -278,8 +279,12 @@ export default function Page() {
                   );
                 })()}
                 <td className="actions">
-                  {editVehicle && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
-                  {editVehicle && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
+                  {editVehicle && (
+                    <RowActions
+                      view={<ViewBtn onClick={() => openEdit(r)} label={`Xem / sửa xe ${r.plate}`} />}
+                      del={<DeleteBtn onClick={() => remove(r)} label={`Xoá xe ${r.plate}`} />}
+                    />
+                  )}
                 </td>
               </tr>
             ))}

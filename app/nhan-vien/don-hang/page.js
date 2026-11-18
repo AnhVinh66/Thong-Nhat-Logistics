@@ -10,6 +10,7 @@ import { drivers as defaultDrivers } from '../../../lib/site';
 import Modal from '../../../components/staff/Modal';
 import DateInput from '../../../components/DateInput';
 import { useRole } from '../../../components/staff/Role';
+import RowActions, { ViewBtn, DeleteBtn } from '../../../components/staff/RowActions';
 import DeliveryDocs, { removeDocFiles } from '../../../components/staff/DeliveryDocs';
 
 const blankStop = { customer_id: '', address: '', cargo: '', weight: '', fee: '', toll_fee: '', parking_fee: '' };
@@ -547,8 +548,8 @@ export default function Page() {
                           Chứng từ ({photoCounts[`${r.id}|`] || 0})
                         </button>
                       )}
-                      {editOrder && <button className="btn btn-outline sm act-edit" onClick={() => openEdit(r)}>Sửa</button>}
-                      {deleteOrder && <button className="btn btn-danger sm act-del" onClick={() => remove(r)}>Xoá</button>}
+                      {editOrder && <span className="act-edit"><ViewBtn onClick={() => openEdit(r)} label={`Xem / sửa đơn ${orderCode(r.order_no)}`} /></span>}
+                      {deleteOrder && <span className="act-del"><DeleteBtn onClick={() => remove(r)} label={`Xoá đơn ${orderCode(r.order_no)}`} /></span>}
                     </div></td>
                   </tr>
                   {isMulti && stops.map((st, si) => (

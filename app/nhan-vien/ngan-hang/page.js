@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { DeleteBtn } from '../../../components/staff/RowActions';
 import { supabase, commas } from '../../../lib/supabase';
 import { BANKS, fmtTime } from '../../../lib/bank';
 import Modal from '../../../components/staff/Modal';
@@ -74,6 +75,17 @@ export default function Page() {
     load();
   }
 
+  // Mở sẵn form sửa khi đến từ trang giao dịch của tài khoản: /nhan-vien/ngan-hang/?edit=<id>
+  const [editParam, setEditParam] = useState(null);
+  useEffect(() => { setEditParam(new URLSearchParams(window.location.search).get('edit')); }, []);
+  useEffect(() => {
+    if (!editParam || !banks.length) return;
+    const b = banks.find((x) => x.id === editParam);
+    if (b) { setFormErr(''); setEditing({ ...blank, ...b, note: b.note || '' }); }
+    setEditParam(null);
+    window.history.replaceState(null, '', '/nhan-vien/ngan-hang/');
+  }, [editParam, banks]);
+
   const set = (k) => (e) => setEditing((s) => ({ ...s, [k]: e.target.value }));
 
   return (
@@ -121,8 +133,7 @@ export default function Page() {
               <div className="bank-actions">
                 <Link href={`/nhan-vien/ngan-hang/chi-tiet/?id=${b.id}`} className="btn btn-outline sm">Xem giao dịch</Link>
                 <button className="btn btn-primary sm" onClick={() => setUpload(b)}>Tải sao kê</button>
-                <button className="btn btn-outline sm" onClick={() => { setFormErr(''); setEditing({ ...blank, ...b, note: b.note || '' }); }}>Sửa</button>
-                <button className="btn btn-danger sm" onClick={() => remove(b)}>Xoá</button>
+                <span className="bank-del"><DeleteBtn onClick={() => remove(b)} label={`Xoá tài khoản ${b.bank_name} ${b.account_number}`} /></span>
               </div>
             </article>
           );

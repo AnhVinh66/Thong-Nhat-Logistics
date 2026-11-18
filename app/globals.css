@@ -1113,3 +1113,15 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .admin .staff-table td { white-space: normal; }
 .admin .staff-table td.num, .admin .staff-table th { white-space: nowrap; }
 .act-grid { grid-template-columns: 100px 50px 50px; gap: 5px; }
+
+/* Nút ⋯ (xem) + thùng rác (xoá) dùng chung cho mọi bảng */
+.row-acts { display: inline-grid; grid-template-columns: 36px 36px; gap: 6px; justify-content: end; align-items: center; vertical-align: middle; }
+.row-icon { text-decoration: none; }
+.row-icon-gap { width: 36px; height: 36px; }
+.cus-table .c-act, .cus-table .c-act.c-act3 { width: 104px !important; }
+.cus-table .c-act .actions { justify-content: center; }
+.act-grid { grid-template-columns: 100px 36px 36px !important; }
+.act-grid .act-edit, .act-grid .act-del { display: inline-grid; }
+.bank-del { margin-left: auto; }
+.cd-head { position: relative; }
+.cd-edit { position: absolute; top: 0; right: 0; }

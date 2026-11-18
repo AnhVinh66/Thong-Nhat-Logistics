@@ -189,6 +189,7 @@ export default function Page() {
           <p className="muted" style={{ margin: 0 }}>{bank?.account_name}</p>
         </div>
         <div className="dash-actions">
+          {bank && <Link href={`/nhan-vien/ngan-hang/?edit=${bank.id}`} className="btn btn-outline">Sửa tài khoản</Link>}
           <button className="btn btn-outline" onClick={rematch} title="Thử gắn lại khách hàng cho các giao dịch chưa có khách (theo mã KH, MST, tên trong nội dung)">Khớp lại khách hàng</button>
           <button className="btn btn-primary" onClick={() => setUpload(true)} disabled={!bank}>Tải sao kê</button>
         </div>

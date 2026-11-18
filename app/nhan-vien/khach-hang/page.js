@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, customerTypes, vnd, customerCode, fmtDate, orderCode, stopCode, displayLogin } from '../../../lib/supabase';
 import { useRole, roleLabel } from '../../../components/staff/Role';
 import Modal from '../../../components/staff/Modal';
+import RowActions, { ViewBtn, DeleteBtn } from '../../../components/staff/RowActions';
 import { exportCustomersExcel } from '../../../lib/exportCustomers';
 
 const blank = { name: '', phone: '', email: '', address: '', company: '', tax_code: '', type: 'le', note: '' };
@@ -230,6 +231,16 @@ export default function Page() {
     setExporting(false);
   }
 
+  const [editParam, setEditParam] = useState(null);
+  useEffect(() => { setEditParam(new URLSearchParams(window.location.search).get('edit')); }, []);
+  useEffect(() => {
+    if (!editParam || !rows.length) return;
+    const r = rows.find((x) => x.id === editParam);
+    if (r && editCustomer) openEdit(r);
+    setEditParam(null);
+    window.history.replaceState(null, '', '/nhan-vien/khach-hang/');
+  }, [editParam, rows]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const set = (k) => (e) => setEditing((s) => ({ ...s, [k]: e.target.value }));
   const openEdit = (r) => {
     setFormErr('');
@@ -337,9 +348,10 @@ export default function Page() {
                 </td>
                 <td className="c-act c-act3">
                   <div className="actions">
-                    <a className="btn btn-primary sm" href={`/nhan-vien/khach-hang/chi-tiet/?id=${r.id}`}>Chi tiết</a>
-                    {editCustomer && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
-                    {deleteCustomer && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
+                    <RowActions
+                      view={<ViewBtn href={`/nhan-vien/khach-hang/chi-tiet/?id=${r.id}`} label={`Xem chi tiết ${customerCode(r.customer_no)} (sửa trong trang chi tiết)`} />}
+                      del={deleteCustomer && <DeleteBtn onClick={() => remove(r)} label={`Xoá khách hàng ${customerCode(r.customer_no)}`} />}
+                    />
                   </div>
                 </td>
               </tr>
