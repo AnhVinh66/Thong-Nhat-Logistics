@@ -793,3 +793,37 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .paid-ok { color: var(--ok); }
 .paid-left { color: var(--err); }
 .stop-list .stop-fee .paid-info { text-align: right; }
+
+/* ===== Kế hoạch chạy xe ===== */
+.plan-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.plan-range { min-width: 190px; text-align: center; color: var(--navy); }
+.plan-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.plan-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1360px; }
+.plan-table th, .plan-table td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 8px; vertical-align: top; text-align: left; }
+.plan-table tr > :last-child { border-right: 0; }
+.plan-table tbody tr:last-child > * { border-bottom: 0; }
+.plan-table thead th { background: var(--navy); color: #fff; text-align: center; font-size: .9rem; position: sticky; top: 0; }
+.plan-table thead th span { display: block; font-weight: 500; font-size: .78rem; opacity: .8; }
+.plan-table thead th.today { background: var(--orange); }
+.plan-table td.today { background: #fff8f1; }
+.plan-veh { width: 150px; background: #f4f7fb; text-align: left !important; }
+.plan-table thead th.plan-veh { background: var(--navy); }
+.plan-veh strong { display: block; color: var(--navy); }
+.plan-veh span { display: block; font-size: .76rem; font-weight: 500; color: var(--muted); }
+.plan-veh .plan-count { margin-top: 4px; font-weight: 700; color: var(--navy); }
+.trip { margin-bottom: 7px; background: #eef4ff; border: 1px solid #c9daf8; border-radius: 9px; overflow: hidden; }
+.trip-head { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: #dce8fd; }
+.trip-head strong { flex: 1; font-size: .84rem; color: var(--navy); }
+.trip-no { flex: 0 0 22px; height: 22px; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 800; font-size: .78rem; display: grid; place-items: center; }
+.trip-body { display: grid; gap: 1px; width: 100%; text-align: left; font: inherit; font-size: .8rem; padding: 5px 8px 7px; background: transparent; border: 0; cursor: pointer; color: inherit; }
+.trip-body:disabled { cursor: default; }
+.trip-body:not(:disabled):hover { background: #e3edff; }
+.trip-cus { font-weight: 600; }
+.trip-route { color: var(--muted); }
+.trip-drv { color: #166534; font-weight: 600; }
+.trip-move { display: flex; gap: 3px; }
+.trip-move button { width: 22px; height: 22px; border: 1px solid #b7c9ea; border-radius: 6px; background: #fff; font-size: .6rem; cursor: pointer; padding: 0; color: var(--navy); line-height: 1; }
+.trip-move button:disabled { opacity: .3; cursor: default; }
+.trip-move button:not(:disabled):hover { border-color: var(--orange); }
+.trip-add { width: 100%; font: inherit; font-size: .78rem; font-weight: 600; padding: 5px; border: 1.5px dashed #b8c4d8; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.trip-add:hover { border-color: var(--orange); color: var(--navy); }

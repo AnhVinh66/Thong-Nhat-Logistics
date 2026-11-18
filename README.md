@@ -65,6 +65,7 @@ Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km t
 3m. **Thống kê theo xe** (số đơn, doanh thu, chi phí nhiên liệu / bảo dưỡng theo ngày, tuần, tháng, năm ở trang Danh sách xe): chạy `supabase/vehicle-stats.sql` SAU `expenses.sql` (đã có trong `schema.sql` bản hiện tại).
 3n. **Phí cầu đường và phí bến bãi** tại điểm trả hàng (Đơn hàng): chạy `supabase/order-fees.sql` SAU `multi-stop.sql` (đã có trong `schema.sql` bản hiện tại). Hai khoản phí được ghi nhận riêng, không cộng vào cước phí.
 3o. **Phân quyền theo 5 vai trò** (Admin, Nhân viên kinh doanh, Kế toán, Điều phối xe, Lái xe — theo bảng phân quyền của công ty): chạy `supabase/simple-users.sql` rồi `supabase/roles.sql` — luôn chạy `roles.sql` CUỐI CÙNG (đã có ở cuối `schema.sql` bản hiện tại). Tài khoản cũ loại "Văn phòng" tự thành **Admin**. Chọn vai trò ở trang Tài khoản; Admin giao khách hàng cho nhân viên kinh doanh ở form Sửa khách hàng.
+3p. **Kế hoạch chạy xe** (lịch xe theo tuần, thứ tự các chuyến trong ngày): chạy `supabase/plan.sql` (đã có trong `schema.sql` bản hiện tại), rồi chạy lại `supabase/roles.sql` nếu cần. Chỉ Admin và Điều phối xe được sửa kế hoạch; Kế toán chỉ xem.
 4. **Authentication → Users → Add user** để tạo tài khoản cho từng nhân viên (email + mật khẩu). Mọi nhân viên có quyền như nhau.
 5. **Project Settings → API**: copy *Project URL* và *anon public key* vào `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` khi chạy thử, GitHub *Variables* khi deploy).
 

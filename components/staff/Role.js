@@ -28,6 +28,7 @@ const VIEW = {
   '/nhan-vien/chi-tien': ['staff', 'sales', 'accountant', 'dispatcher'],
   '/nhan-vien/ngan-hang': ['staff', 'accountant'],
   '/nhan-vien/xe': ['staff', 'accountant', 'dispatcher'],
+  '/nhan-vien/ke-hoach': ['staff', 'accountant', 'dispatcher'],
   '/nhan-vien/tai-khoan': ['staff'],
 };
 
@@ -57,6 +58,7 @@ function abilities(role) {
     editCollection: role === 'staff', // sửa / xoá phiếu Thu
     addExpense: is('staff', 'sales', 'accountant', 'dispatcher')(role),
     manageAllExpenses: is('staff', 'accountant')(role), // duyệt, thanh toán, sửa / xoá lệnh Chi của mọi người
+    editPlan: is('staff', 'dispatcher')(role), // xếp xe, đổi thứ tự chuyến
     editVehicle: is('staff', 'accountant', 'dispatcher')(role),
   };
 }
