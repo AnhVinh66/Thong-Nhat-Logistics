@@ -833,3 +833,5 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .o-status .st-pill { display: inline-block; }
 .o-status .o-done { display: block; margin-top: 5px; }
 .o-status .muted { display: block; margin-top: 3px; }
+
+.topbar-cms { margin-left: 4px; padding-left: 14px; border-left: 1px solid rgba(255,255,255,.25); font-weight: 700; }

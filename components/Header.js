@@ -25,6 +25,9 @@ export default function Header() {
           <a href={`tel:${site.hotline}`} className="topbar-hot">
             <Icon name="phone" size={14} /> Hotline {site.hotlineDisplay}
           </a>
+          <Link href="/nhan-vien/" className="topbar-cms">
+            <Icon name="key" size={14} /> Thống Nhất CMS
+          </Link>
         </div>
       </div>
       <div className="container nav-in">
