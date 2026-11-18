@@ -167,8 +167,26 @@ const sections = [
 ];
 
 // Bố cục quản trị: menu cố định bên trái (máy tính), thu gọn thành nút ☰ (điện thoại)
+// Giao diện Sáng / Tối do người dùng chọn, nhớ trên máy này
+const THEME_KEY = 'tn-cms-theme';
+function useTheme() {
+  const [theme, setTheme] = useState('light');
+  useEffect(() => {
+    try { if (localStorage.getItem(THEME_KEY) === 'dark') setTheme('dark'); } catch {}
+  }, []);
+  useEffect(() => {
+    const el = document.documentElement;
+    if (theme === 'dark') el.setAttribute('data-theme', 'dark');
+    else el.removeAttribute('data-theme');
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    return () => el.removeAttribute('data-theme'); // ra khỏi CMS (đăng xuất) thì về giao diện thường
+  }, [theme]);
+  return [theme, () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))];
+}
+
 function AdminLayout({ role, pathname, login, onLogout, children }) {
   const [open, setOpen] = useState(false);
+  const [theme, toggleTheme] = useTheme();
   const isActive = (h) => (h === '/nhan-vien/' ? pathname.replace(/\/$/, '') === '/nhan-vien' : pathname.startsWith(h));
   const visible = sections
     .map((s) => ({ ...s, links: s.links.filter((l) => canView(role, l.href)) }))
@@ -217,6 +235,18 @@ function AdminLayout({ role, pathname, login, onLogout, children }) {
             <span className="side-avatar" aria-hidden="true">{(login[0] || '?').toUpperCase()}</span>
             <span className="side-login" title={login}>{login}<small className="side-role">{roleLabel[role]}</small></span>
           </div>
+          <button
+            type="button"
+            className="side-link side-theme"
+            role="switch"
+            aria-checked={theme === 'dark'}
+            onClick={toggleTheme}
+            title="Bật / tắt giao diện tối"
+          >
+            <Icon name="moon" size={20} />
+            <span>Dark mode</span>
+            <span className={`theme-switch ${theme === 'dark' ? 'on' : ''}`} aria-hidden="true"><span /></span>
+          </button>
           <button className="side-link side-logout" onClick={onLogout}>
             <Icon name="logout" size={20} /><span>Đăng xuất</span>
           </button>

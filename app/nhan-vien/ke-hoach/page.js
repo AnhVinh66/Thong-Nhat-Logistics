@@ -22,11 +22,12 @@ const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, 
 const PERIODS = [
   { key: 'am', label: 'Sáng' },
   { key: 'pm', label: 'Chiều' },
+  { key: 'eve', label: 'Tối' },
   { key: '', label: 'Chưa chọn buổi' },
 ];
-const periodLabel = (k) => (k === 'am' ? 'Sáng' : k === 'pm' ? 'Chiều' : '');
-const rank = (o) => (o.trip_period === 'am' ? 0 : o.trip_period === 'pm' ? 1 : 2);
-// Thứ tự trong một ô: Sáng -> Chiều -> chưa chọn buổi; trong mỗi buổi theo số chuyến đã xếp
+const periodLabel = (k) => (k === 'am' ? 'Sáng' : k === 'pm' ? 'Chiều' : k === 'eve' ? 'Tối' : '');
+const rank = (o) => ({ am: 0, pm: 1, eve: 2 })[o.trip_period] ?? 3;
+// Thứ tự trong một ô: Sáng -> Chiều -> Tối -> chưa chọn buổi; trong mỗi buổi theo số chuyến đã xếp
 const bySeq = (a, b) => rank(a) - rank(b) || (a.trip_seq ?? 1e9) - (b.trip_seq ?? 1e9) || a.order_no - b.order_no;
 
 function routeOf(o) {
@@ -127,7 +128,9 @@ export default function Page() {
     const pl = order?.plate || plate;
     const dt = order?.ship_date || date;
     const cellList = pl && dt ? (cells[`${pl}|${dt}`] || []) : [];
-    const per = order ? order.trip_period || '' : (cellList.some((o) => o.trip_period === 'am') ? 'pm' : 'am');
+    // Thêm chuyến mới: gợi ý buổi còn trống đầu tiên (Sáng -> Chiều -> Tối)
+    const has = (k) => cellList.some((o) => o.trip_period === k);
+    const per = order ? order.trip_period || '' : !has('am') ? 'am' : !has('pm') ? 'pm' : 'eve';
     const band = cellList.filter((o) => (o.trip_period || '') === per);
     const idx = order ? band.findIndex((o) => o.id === order.id) : -1;
     const sameDriver = cellList[0]?.driver || '';
@@ -187,7 +190,7 @@ export default function Page() {
       </div>
       <p className="muted" style={{ marginTop: 0 }}>
         {weekCount} chuyến trong tuần · {pending.length} đơn chưa xếp xe.
-        {editPlan ? ' Bấm vào một chuyến để đổi xe, ngày, tài xế; dùng ▲ ▼ để đổi thứ tự trong cùng buổi (Sáng / Chiều).' : ' Bạn chỉ có quyền xem kế hoạch.'}
+        {editPlan ? ' Bấm vào một chuyến để đổi xe, ngày, tài xế; dùng ▲ ▼ để đổi thứ tự trong cùng buổi (Sáng / Chiều / Tối).' : ' Bạn chỉ có quyền xem kế hoạch.'}
       </p>
       {notice && <p className={notice.ok ? 'ok-msg' : 'err'} role="status" style={{ marginBottom: 10 }}>{notice.text}</p>}
 
@@ -365,7 +368,7 @@ export default function Page() {
                 </select>
               </div>
               <div className="field">
-                <label htmlFor="p-pos">Thứ tự chạy trong {dlg.period === 'am' ? 'buổi sáng' : dlg.period === 'pm' ? 'buổi chiều' : 'ngày'}</label>
+                <label htmlFor="p-pos">Thứ tự chạy trong {dlg.period === 'am' ? 'buổi sáng' : dlg.period === 'pm' ? 'buổi chiều' : dlg.period === 'eve' ? 'buổi tối' : 'ngày'}</label>
                 <select id="p-pos" value={dlg.pos && dlg.pos <= target.length ? dlg.pos : target.length + 1} onChange={(e) => setDlg((s) => ({ ...s, pos: Number(e.target.value) }))}>
                   {Array.from({ length: target.length + 1 }, (_, i) => (
                     <option key={i + 1} value={i + 1}>

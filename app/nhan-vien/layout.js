@@ -1,4 +1,5 @@
 import StaffShell from '../../components/staff/StaffShell';
+import '../theme-dark.css'; // giao diện Tối của Thống Nhất CMS (sinh từ scripts/gen-dark-css.mjs)
 
 export const metadata = {
   // Mỗi mục có file layout.js riêng đặt tiêu đề: "<Tên mục> | Thống Nhất CMS". Mục mới: thêm layout.js tương tự.

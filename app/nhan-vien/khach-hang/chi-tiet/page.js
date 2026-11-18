@@ -211,7 +211,7 @@ export default function Page() {
                 <td className="cd-route">{p.content || <span className="muted">—</span>}</td>
                 <td className="num"><strong style={{ color: 'var(--ok)' }}>{vnd(p.amount)}</strong></td>
                 <td className="num">{vnd(p.allocated)}</td>
-                <td className="num">{Number(p.amount) - p.allocated > 0 ? <strong style={{ color: '#b45309' }}>{vnd(Number(p.amount) - p.allocated)}</strong> : <span className="muted">—</span>}</td>
+                <td className="num">{Number(p.amount) - p.allocated > 0 ? <strong style={{ color: 'var(--gold)' }}>{vnd(Number(p.amount) - p.allocated)}</strong> : <span className="muted">—</span>}</td>
               </tr>
             ))}
             {!loading && !payments.length && <tr><td colSpan={7} className="muted">Khách hàng này chưa có phiếu Thu nào.</td></tr>}

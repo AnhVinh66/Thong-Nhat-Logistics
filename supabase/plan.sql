@@ -1,16 +1,16 @@
 -- Chạy file này trong Supabase: SQL Editor -> New query -> dán -> Run.
--- Kế hoạch chạy xe theo tuần: buổi (Sáng / Chiều) và thứ tự các chuyến của một xe trong một ngày. Chạy nhiều lần không sao.
+-- Kế hoạch chạy xe theo tuần: buổi (Sáng / Chiều / Tối) và thứ tự các chuyến của một xe trong một ngày. Chạy nhiều lần không sao.
 -- CẦN CHẠY SAU schema.sql (hoặc vehicles.sql + driver-role.sql). Không phụ thuộc roles.sql.
 --
 -- Mỗi đơn hàng là một chuyến: xe (plate), tài xế (driver), ngày (ship_date) đã có sẵn trên đơn.
--- Cột mới: trip_period = buổi chạy ('am' = Sáng, 'pm' = Chiều, rỗng = chưa chọn buổi);
---          trip_seq = số thứ tự chuyến trong ngày của xe đó (1, 2, 3...), xếp theo Sáng -> Chiều -> chưa chọn buổi.
+-- Cột mới: trip_period = buổi chạy ('am' = Sáng, 'pm' = Chiều, 'eve' = Tối, rỗng = chưa chọn buổi);
+--          trip_seq = số thứ tự chuyến trong ngày của xe đó (1, 2, 3...), xếp theo Sáng -> Chiều -> Tối -> chưa chọn buổi.
 -- Chỉ Admin (staff) và Điều phối xe (dispatcher) được xếp / đổi xe, ngày, buổi, tài xế, thứ tự — qua các hàm dưới đây.
 
 alter table public.orders add column if not exists trip_seq int check (trip_seq > 0);
 alter table public.orders add column if not exists trip_period text;
 alter table public.orders drop constraint if exists orders_trip_period_check;
-alter table public.orders add constraint orders_trip_period_check check (trip_period in ('am', 'pm'));
+alter table public.orders add constraint orders_trip_period_check check (trip_period in ('am', 'pm', 'eve'));
 create index if not exists orders_plan_idx on public.orders (plate, ship_date, trip_seq);
 
 -- Đánh lại số thứ tự 1..n cho các chuyến của một xe trong một ngày theo thứ tự Sáng -> Chiều -> chưa chọn buổi,
@@ -26,7 +26,7 @@ begin
   if p_order is not null then
     select trip_period into v_period from public.orders where id = p_order;
   end if;
-  foreach b in array array['am', 'pm', ''] loop
+  foreach b in array array['am', 'pm', 'eve', ''] loop
     select coalesce(array_agg(id order by trip_seq nulls last, order_no), '{}') into band
     from public.orders
     where plate = p_plate and ship_date = p_date and (p_order is null or id <> p_order)
@@ -60,8 +60,8 @@ begin
   if v_role is null or v_role not in ('staff', 'dispatcher') then
     raise exception 'Chỉ Admin hoặc Điều phối xe mới được sửa kế hoạch chạy xe.';
   end if;
-  if v_period is not null and v_period not in ('am', 'pm') then
-    raise exception 'Buổi chạy không hợp lệ (chỉ Sáng hoặc Chiều).';
+  if v_period is not null and v_period not in ('am', 'pm', 'eve') then
+    raise exception 'Buổi chạy không hợp lệ (chỉ Sáng, Chiều hoặc Tối).';
   end if;
   select plate, ship_date into old_plate, old_date from public.orders where id = p_order;
   if not found then

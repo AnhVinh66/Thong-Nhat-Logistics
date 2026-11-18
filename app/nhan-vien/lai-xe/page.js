@@ -104,7 +104,7 @@ export default function Page() {
         <div className="kpi"><span className="kpi-text"><span className="kpi-label">Tổng số đơn hàng</span><span className="kpi-value">{sum.n}</span><span className="kpi-sub">{range.label}</span></span></div>
         <div className="kpi"><span className="kpi-text"><span className="kpi-label">Tổng doanh thu</span><span className="kpi-value">{vnd(sum.total)}</span><span className="kpi-sub">mọi đơn đã giao cho lái xe</span></span></div>
         <div className="kpi"><span className="kpi-text"><span className="kpi-label">Doanh thu đơn hoàn thành</span><span className="kpi-value" style={{ color: 'var(--ok)' }}>{vnd(sum.done)}</span><span className="kpi-sub">dùng để tính thưởng</span></span></div>
-        <div className="kpi"><span className="kpi-text"><span className="kpi-label">Tổng thưởng doanh số</span><span className="kpi-value" style={{ color: '#b45309' }}>{vnd(sum.bonus)}</span><span className="kpi-sub">cộng thưởng từng ngày</span></span></div>
+        <div className="kpi"><span className="kpi-text"><span className="kpi-label">Tổng thưởng doanh số</span><span className="kpi-value" style={{ color: 'var(--gold)' }}>{vnd(sum.bonus)}</span><span className="kpi-sub">cộng thưởng từng ngày</span></span></div>
       </div>
 
       <div className="bonus-rules">
@@ -130,7 +130,7 @@ export default function Page() {
                   <td className="num">{vnd(d.total)}</td>
                   <td className="num" style={{ color: d.done ? 'var(--ok)' : undefined }}>{vnd(d.done)}</td>
                   <td className="num">{d.bonusDays} / {d.days.length} ngày chạy</td>
-                  <td className="num"><strong style={{ color: d.bonus ? '#b45309' : 'var(--muted)' }}>{vnd(d.bonus)}</strong></td>
+                  <td className="num"><strong style={{ color: d.bonus ? 'var(--gold)' : 'var(--muted)' }}>{vnd(d.bonus)}</strong></td>
                   <td className="actions">
                     {d.days.length > 0 && (
                       <button className="btn btn-outline sm" aria-expanded={!!open[d.name]} onClick={() => setOpen((s) => ({ ...s, [d.name]: !s[d.name] }))}>
@@ -159,7 +159,7 @@ export default function Page() {
                               </td>
                               <td className="num">{vnd(x.total)}</td>
                               <td className="num">{vnd(x.done)}</td>
-                              <td className="num"><strong style={{ color: x.bonus ? '#b45309' : 'var(--muted)' }}>{x.bonus ? vnd(x.bonus) : '—'}</strong></td>
+                              <td className="num"><strong style={{ color: x.bonus ? 'var(--gold)' : 'var(--muted)' }}>{x.bonus ? vnd(x.bonus) : '—'}</strong></td>
                             </tr>
                           ))}
                         </tbody>

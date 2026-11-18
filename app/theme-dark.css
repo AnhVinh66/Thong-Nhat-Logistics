@@ -1,0 +1,217 @@
+/* TỰ SINH bởi scripts/gen-dark-css.mjs từ app/globals.css — đừng sửa tay; sửa trong script rồi chạy lại. */
+
+html[data-theme="dark"] .admin {
+  --bg: #0a111d;
+  --soft: #0a111d;
+  --line: #2a3a54;
+  --text: #e2e8f0;
+  --muted: #9aaac0;
+  --navy: #dbe6f7;
+  --ok: #4ade80;
+  --err: #f87171;
+  --orange-d: #fb923c;
+  --gold: #fbbf24;
+  --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  color-scheme: dark;
+  color: var(--text); /* chữ kế thừa từ body vẫn là màu tối -> đặt lại */
+}
+html[data-theme="dark"] body { background: #0a111d; }
+html[data-theme="dark"] .admin .skip { background: #22406b; }
+html[data-theme="dark"] .admin .btn-outline:hover { background: #22406b; }
+html[data-theme="dark"] .admin .btn-ghost { border-color: hsla(220, 25%, 24%, 0.5); }
+html[data-theme="dark"] .admin .header { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .topbar { background: #22406b; }
+html[data-theme="dark"] .admin .logo-light { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .menu-btn { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .hero { background: radial-gradient(1200px 500px at 85% 20%, rgba(249, 115, 22, .18), transparent 60%), linear-gradient(135deg, #22406b 0%, var(--navy-2) 60%, var(--navy-3) 100%); }
+html[data-theme="dark"] .admin .stats-in { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .card { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .card:hover { border-color: hsl(216, 33%, 31%); }
+html[data-theme="dark"] .admin .icon-box { background: hsl(29, 45%, 18%); }
+html[data-theme="dark"] .admin .step::before { background: #22406b; }
+html[data-theme="dark"] .admin .fleet-table { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .fleet-table th { background: #22406b; }
+html[data-theme="dark"] .admin .cta-band { background: linear-gradient(120deg, #22406b, var(--navy-3)); }
+html[data-theme="dark"] .admin .page-hero { background: linear-gradient(135deg, #22406b, var(--navy-3)); }
+html[data-theme="dark"] .admin input,
+html[data-theme="dark"] .admin select,
+html[data-theme="dark"] .admin textarea { border: 1.5px solid hsl(217, 29%, 33%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin input:hover,
+html[data-theme="dark"] .admin select:hover,
+html[data-theme="dark"] .admin textarea:hover { border-color: hsl(215, 27%, 39%); }
+html[data-theme="dark"] .admin .notice-ok { background: hsl(145, 45%, 17%); border: 1px solid hsl(142, 35%, 35%); }
+html[data-theme="dark"] .admin .calc-result { background: #22406b; }
+html[data-theme="dark"] .admin .calc-meta li { border-bottom: 1px solid hsla(220, 25%, 24%, 0.12); }
+html[data-theme="dark"] .admin .tag { background: hsl(29, 45%, 18%); }
+html[data-theme="dark"] .admin .footer-bottom { border-top: 1px solid hsla(220, 25%, 24%, 0.1); }
+html[data-theme="dark"] .admin .manual { border: 1px dashed hsl(217, 29%, 35%); }
+html[data-theme="dark"] .admin .login-card { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .staff-bar { background: #22406b; }
+html[data-theme="dark"] .admin .staff-table td { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .btn-danger { background: hsl(220, 30%, 14%); border-color: hsl(0, 35%, 34%); }
+html[data-theme="dark"] .admin .modal { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .seg { border: 1.5px solid hsl(217, 29%, 33%); }
+html[data-theme="dark"] .admin .seg button { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .seg button + button { border-left: 1.5px solid hsl(217, 29%, 33%); }
+html[data-theme="dark"] .admin .seg button.on { background: #22406b; }
+html[data-theme="dark"] .admin .btn-docs { background: hsl(220, 30%, 14%); border-color: hsl(217, 29%, 33%); }
+html[data-theme="dark"] .admin .btn-docs-has { background: hsl(145, 45%, 17%); border-color: hsl(142, 35%, 35%); }
+html[data-theme="dark"] .admin .btn-docs-has:hover { background: hsl(144, 45%, 22%); }
+html[data-theme="dark"] .admin .thumbs li { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-top { background: #22406b; }
+html[data-theme="dark"] .admin .drv-logout { border: 1.5px solid hsla(220, 25%, 24%, 0.5); }
+html[data-theme="dark"] .admin .drv-tabs { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-tabs button { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-order { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-point.done { border-color: hsl(143, 35%, 40%); background: hsl(140, 45%, 16%); }
+html[data-theme="dark"] .admin .drv-link { color: hsl(217, 90%, 71%); }
+html[data-theme="dark"] .admin .drv-view { border: 1.5px solid hsl(217, 29%, 33%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-reload { border: 1.5px dashed hsl(217, 29%, 35%); }
+html[data-theme="dark"] .admin .install-hint { background: hsl(33, 45%, 17%); border: 1px solid hsl(32, 35%, 32%); }
+html[data-theme="dark"] .admin .ios-share { color: hsl(217, 90%, 71%); }
+html[data-theme="dark"] .admin .phone-screen { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .ph-url { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .ph-menu { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .hl { background: hsl(29, 45%, 18%); }
+html[data-theme="dark"] .admin .ph-dialog { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .ph-page { background: repeating-linear-gradient(180deg, hsl(220, 30%, 14%) 0 14px, var(--soft) 14px 16px); }
+html[data-theme="dark"] .admin .ph-bottom { color: hsl(217, 90%, 71%); }
+html[data-theme="dark"] .admin .hl-icon { background: hsl(29, 45%, 18%); }
+html[data-theme="dark"] .admin .ph-sheet { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .kpi { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin a.kpi:hover { border-color: hsl(217, 29%, 33%); }
+html[data-theme="dark"] .admin .tone-navy { background: hsl(216, 45%, 19%); }
+html[data-theme="dark"] .admin .tone-blue { background: hsl(216, 45%, 18%); color: hsl(224, 76%, 69%); }
+html[data-theme="dark"] .admin .tone-ok { background: hsl(145, 45%, 19%); }
+html[data-theme="dark"] .admin .tone-warn { background: hsl(39, 45%, 19%); color: hsl(26, 90%, 75%); }
+html[data-theme="dark"] .admin .tone-err { background: hsl(0, 45%, 17%); }
+html[data-theme="dark"] .admin .panel { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .panel-link { color: hsl(217, 90%, 71%); }
+html[data-theme="dark"] .admin .pill-ok { background: hsl(145, 45%, 19%); color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .pill-warn { background: hsl(39, 45%, 19%); color: hsl(23, 83%, 78%); }
+html[data-theme="dark"] .admin .pill-err { background: hsl(0, 45%, 17%); color: hsl(0, 70%, 76%); }
+html[data-theme="dark"] .admin .pill-blue { background: hsl(216, 45%, 18%); color: hsl(226, 71%, 73%); }
+html[data-theme="dark"] .admin .todo-list a:hover { background: hsl(220, 31%, 19%); }
+html[data-theme="dark"] .admin .cus-table { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .cus-table th { background: #22406b; }
+html[data-theme="dark"] .admin .cus-table tbody tr:hover td { background: hsl(220, 43%, 15%); }
+html[data-theme="dark"] .admin .pill-type-doanh_nghiep { background: hsl(216, 45%, 18%); color: hsl(226, 71%, 73%); }
+html[data-theme="dark"] .admin .pill-type-dai_ly { background: hsl(269, 45%, 18%); color: hsl(273, 67%, 73%); }
+html[data-theme="dark"] .admin .debt-ok { color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .cus-sum > div { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .cus-detail-table { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .cus-detail-table th { background: hsl(216, 45%, 19%); }
+html[data-theme="dark"] .admin .alloc-scroll { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .alloc-table th { background: hsl(216, 42%, 18%); }
+html[data-theme="dark"] .admin .alloc-table tr.on td { background: hsl(33, 45%, 17%); }
+html[data-theme="dark"] .admin .pay-cell input:disabled { background: hsl(214, 33%, 17%); }
+html[data-theme="dark"] .admin .fill-btn { border: 1.5px solid hsl(217, 29%, 33%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .sum-warn { color: hsl(26, 90%, 75%); }
+html[data-theme="dark"] .admin .cus-code { background: hsl(29, 45%, 18%); }
+html[data-theme="dark"] .admin .bank-card { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .bank-logo { background: #22406b; }
+html[data-theme="dark"] .admin .bank-stats .bal { color: hsl(221, 83%, 66%); }
+html[data-theme="dark"] .admin .bk-tabs button { background: hsl(218, 31%, 18%); }
+html[data-theme="dark"] .admin .bk-tabs button.on { background: hsl(218, 45%, 18%); color: hsl(221, 83%, 66%); }
+html[data-theme="dark"] .admin .bk-table-wrap { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .bk-table th { color: hsl(216, 21%, 75%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .bk-table td { border-bottom: 1px solid hsl(218, 31%, 27%); }
+html[data-theme="dark"] .admin .bk-table tbody tr:hover td { background: hsl(228, 45%, 14%); }
+html[data-theme="dark"] .admin .amt-in { color: hsl(142, 76%, 75%); }
+html[data-theme="dark"] .admin .amt-out { color: hsl(0, 72%, 67%); }
+html[data-theme="dark"] .admin .bk-pill { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .bk-pill.ok { color: hsl(142, 76%, 75%); border-color: hsl(143, 35%, 40%); background: hsl(142, 45%, 17%); }
+html[data-theme="dark"] .admin .bk-pill.bad { color: hsl(0, 72%, 67%); border-color: hsl(0, 35%, 34%); background: hsl(0, 45%, 16%); }
+html[data-theme="dark"] .admin .bk-table .c-hash { color: hsl(216, 21%, 75%); }
+html[data-theme="dark"] .admin .bk-table .c-bal { color: hsl(221, 83%, 66%); }
+html[data-theme="dark"] .admin .up-drop { border: 2px dashed hsl(217, 29%, 33%); }
+html[data-theme="dark"] .admin .up-preview { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .recon-btn.recon-na { background: hsl(214, 33%, 17%); border-color: hsl(218, 29%, 30%); }
+html[data-theme="dark"] .admin .recon-box.recon-ok { background: hsl(142, 45%, 17%); border-color: hsl(143, 35%, 40%); }
+html[data-theme="dark"] .admin .recon-box.recon-bad { background: hsl(0, 45%, 16%); border-color: hsl(0, 35%, 34%); }
+html[data-theme="dark"] .admin .recon-box.recon-na .recon-icon { background: hsl(218, 16%, 49%); }
+html[data-theme="dark"] .admin .bk-pill.na { border-color: hsl(219, 30%, 29%); background: hsl(216, 38%, 16%); }
+html[data-theme="dark"] .admin .bk-ref { color: hsl(142, 76%, 75%); }
+html[data-theme="dark"] .admin .bk-assign { color: hsl(221, 83%, 66%); }
+html[data-theme="dark"] .admin .st-pending { background: hsl(39, 45%, 19%); color: hsl(23, 83%, 78%); }
+html[data-theme="dark"] .admin .st-approved { background: hsl(216, 45%, 18%); color: hsl(226, 71%, 73%); }
+html[data-theme="dark"] .admin .st-paid { background: hsl(145, 45%, 19%); color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .type-chips button { border: 1.5px solid hsl(217, 29%, 33%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .type-chips button.on { background: #22406b; }
+html[data-theme="dark"] .admin .exp-step { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .exp-step.done { border-color: hsl(143, 35%, 40%); background: hsl(137, 45%, 15%); }
+html[data-theme="dark"] .admin .bk-ref.out { color: hsl(0, 72%, 67%); }
+html[data-theme="dark"] .admin .stop-code { background: hsl(216, 45%, 19%); border: 1px solid hsl(217, 35%, 31%); }
+html[data-theme="dark"] .admin .tp-trigger { border: 1.5px solid hsl(217, 29%, 33%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .tp-trigger.empty { color: hsl(216, 16%, 64%); }
+html[data-theme="dark"] .admin .tp-trigger:hover { border-color: hsl(215, 27%, 39%); }
+html[data-theme="dark"] .admin .tp-pop { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .tp-list li.active { background: hsl(29, 45%, 18%); }
+html[data-theme="dark"] .admin .tp-tag { color: hsl(226, 71%, 73%); background: hsl(216, 45%, 18%); }
+html[data-theme="dark"] .admin .period-bar { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .fee-trigger { border: 1.5px dashed hsl(217, 29%, 35%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .fee-trigger.has { border-color: hsl(143, 35%, 40%); background: hsl(142, 45%, 17%); color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .fee-panel { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .cd-table tfoot td { background: hsl(214, 45%, 16%); }
+html[data-theme="dark"] .admin .st-none { background: hsl(210, 40%, 17%); color: hsl(215, 19%, 76%); }
+html[data-theme="dark"] .admin .plan-wrap { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .plan-table thead th { background: #22406b; }
+html[data-theme="dark"] .admin .plan-table td.today { background: hsl(30, 45%, 16%); }
+html[data-theme="dark"] .admin .plan-veh { background: hsl(214, 45%, 16%); }
+html[data-theme="dark"] .admin .plan-table thead th.plan-veh { background: #22406b; }
+html[data-theme="dark"] .admin .trip { background: hsl(219, 45%, 17%); border: 1px solid hsl(218, 35%, 30%); }
+html[data-theme="dark"] .admin .trip-head { background: hsl(218, 45%, 20%); }
+html[data-theme="dark"] .admin .trip-no { background: #22406b; }
+html[data-theme="dark"] .admin .trip-body:not(:disabled):hover { background: hsl(219, 45%, 18%); }
+html[data-theme="dark"] .admin .trip-drv { color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .trip-move button { border: 1px solid hsl(219, 35%, 33%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .trip-add { border: 1.5px dashed hsl(217, 29%, 35%); }
+html[data-theme="dark"] .admin .topbar-cms { border-left: 1px solid hsla(220, 25%, 24%, 0.25); }
+html[data-theme="dark"] .admin .trip-band.band-am { background: hsl(48, 45%, 24%); color: hsl(39, 90%, 80%); }
+html[data-theme="dark"] .admin .trip-band.band-pm { background: hsl(253, 45%, 20%); color: hsl(253, 58%, 71%); }
+html[data-theme="dark"] .admin .trip-band.band-none { background: hsl(218, 31%, 18%); }
+html[data-theme="dark"] .admin .seg-btn { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .seg-btn.on { background: #22406b; }
+html[data-theme="dark"] .admin .trip-status.open { background: hsl(35, 45%, 19%); color: hsl(29, 90%, 78%); }
+html[data-theme="dark"] .admin .trip-status.done { background: hsl(141, 45%, 20%); color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .trip-done { background: hsl(142, 45%, 17%); border-color: hsl(141, 35%, 34%); }
+html[data-theme="dark"] .admin .trip-done .trip-head { background: hsl(141, 45%, 23%); }
+html[data-theme="dark"] .admin .dropzone { background: hsl(217, 45%, 17%); color: hsl(224, 76%, 69%); }
+html[data-theme="dark"] .admin .dropzone:hover { background: hsl(214, 45%, 20%); }
+html[data-theme="dark"] .admin .dropzone.over { background: hsl(214, 45%, 20%); }
+html[data-theme="dark"] .admin .dropzone-label { color: hsl(217, 33%, 85%); }
+html[data-theme="dark"] .admin .dropzone-hint { color: hsl(215, 19%, 76%); }
+html[data-theme="dark"] .admin .trip-stops li { background: hsl(39, 45%, 17%); }
+html[data-theme="dark"] .admin .trip-stops li.done { background: hsl(145, 45%, 17%); }
+html[data-theme="dark"] .admin .ts-state { color: hsl(29, 90%, 78%); }
+html[data-theme="dark"] .admin .trip-stops li.done .ts-state { color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .bonus-rules { background: hsl(48, 45%, 17%); border: 1px solid hsl(48, 35%, 36%); color: hsl(22, 78%, 80%); }
+html[data-theme="dark"] .admin .bonus-chip { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-days { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-days th { color: hsl(216, 21%, 75%); background: hsl(214, 45%, 16%); }
+html[data-theme="dark"] .admin .drv-days td { border-top: 1px solid hsl(218, 31%, 27%); }
+html[data-theme="dark"] .admin .drv-ord { background: hsl(218, 31%, 18%); color: hsl(215, 16%, 69%); }
+html[data-theme="dark"] .admin .drv-ord.done { background: hsl(141, 45%, 20%); color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .drv-ord.part { background: hsl(48, 45%, 24%); color: hsl(23, 83%, 78%); }
+html[data-theme="dark"] .admin .drv-bonus-grid.month > div { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-bonus-grid .gold { color: hsl(26, 90%, 75%); }
+html[data-theme="dark"] .admin .drv-bonus-rules { background: hsl(48, 45%, 17%); border: 1px solid hsl(48, 35%, 36%); color: hsl(22, 78%, 80%); }
+html[data-theme="dark"] .admin .drv-bonus-rules small { color: hsl(23, 83%, 78%); }
+html[data-theme="dark"] .admin .drv-month { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .drv-days-list li { background: hsl(220, 30%, 14%); border-left: 4px solid hsl(213, 27%, 32%); }
+html[data-theme="dark"] .admin .drv-day-bonus { color: hsl(26, 90%, 75%); }
+html[data-theme="dark"] .admin .drv-day-codes span { background: hsl(218, 31%, 18%); color: hsl(215, 16%, 69%); }
+html[data-theme="dark"] .admin .drv-day-codes span.done { background: hsl(141, 45%, 20%); color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .drv-day-codes span.part { background: hsl(48, 45%, 24%); color: hsl(23, 83%, 78%); }
+@media (max-width: 1080px) {
+html[data-theme="dark"] .admin .nav { background: hsl(220, 30%, 14%); }
+}
+@media (max-width: 600px) {
+html[data-theme="dark"] .admin .mobile-bar { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .mb-zalo { color: hsl(216, 90%, 68%); }
+html[data-theme="dark"] .admin .mb-quote { background: #22406b; }
+}
+@media (max-width: 900px) {
+html[data-theme="dark"] .admin .cus-table tbody tr { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .cus-table tfoot tr { background: #22406b; }
+}

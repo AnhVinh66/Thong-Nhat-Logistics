@@ -1320,7 +1320,7 @@ grant execute on function public.delete_staff_user(uuid) to authenticated;
 alter table public.orders add column if not exists trip_seq int check (trip_seq > 0);
 alter table public.orders add column if not exists trip_period text;
 alter table public.orders drop constraint if exists orders_trip_period_check;
-alter table public.orders add constraint orders_trip_period_check check (trip_period in ('am', 'pm'));
+alter table public.orders add constraint orders_trip_period_check check (trip_period in ('am', 'pm', 'eve'));
 create index if not exists orders_plan_idx on public.orders (plate, ship_date, trip_seq);
 
 -- Đánh lại số thứ tự 1..n cho các chuyến của một xe trong một ngày theo thứ tự Sáng -> Chiều -> chưa chọn buổi,
@@ -1336,7 +1336,7 @@ begin
   if p_order is not null then
     select trip_period into v_period from public.orders where id = p_order;
   end if;
-  foreach b in array array['am', 'pm', ''] loop
+  foreach b in array array['am', 'pm', 'eve', ''] loop
     select coalesce(array_agg(id order by trip_seq nulls last, order_no), '{}') into band
     from public.orders
     where plate = p_plate and ship_date = p_date and (p_order is null or id <> p_order)
@@ -1370,8 +1370,8 @@ begin
   if v_role is null or v_role not in ('staff', 'dispatcher') then
     raise exception 'Chỉ Admin hoặc Điều phối xe mới được sửa kế hoạch chạy xe.';
   end if;
-  if v_period is not null and v_period not in ('am', 'pm') then
-    raise exception 'Buổi chạy không hợp lệ (chỉ Sáng hoặc Chiều).';
+  if v_period is not null and v_period not in ('am', 'pm', 'eve') then
+    raise exception 'Buổi chạy không hợp lệ (chỉ Sáng, Chiều hoặc Tối).';
   end if;
   select plate, ship_date into old_plate, old_date from public.orders where id = p_order;
   if not found then
