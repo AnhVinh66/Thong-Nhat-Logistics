@@ -9,6 +9,7 @@ import Modal from '../../../components/staff/Modal';
 import DateInput from '../../../components/DateInput';
 import ExpenseForm from '../../../components/staff/ExpenseForm';
 import DropZone from '../../../components/staff/DropZone';
+import Icon from '../../../components/Icon';
 import { useRole } from '../../../components/staff/Role';
 import { compress } from '../../../components/staff/DeliveryDocs';
 
@@ -359,11 +360,10 @@ export default function Page() {
                 <td className="x-by">{r.created_by_name || '—'}</td>
                 <td className="x-act">
                   <div className="actions">
-                    <button className="btn btn-outline sm" onClick={() => setOpen(r)}>Xem</button>
-                    {manageAllExpenses && r.status === 'pending' && <button className="btn btn-primary sm" onClick={() => changeStatus(r, 'approved')}>Duyệt</button>}
-                    {manageAllExpenses && r.status === 'approved' && <button className="btn btn-primary sm" onClick={() => changeStatus(r, 'paid')}>Đã TT</button>}
-                    {(manageAllExpenses || r.created_by === userId) && r.status === 'pending' && <button className="btn btn-outline sm" onClick={() => { setNotice(null); setForm({ edit: r }); }}>Sửa</button>}
-                    {(manageAllExpenses || r.created_by === userId) && r.status === 'pending' && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
+                    <button className="row-icon" onClick={() => setOpen(r)} aria-label={`Xem phiếu ${expenseCode(r.expense_no)}`} title="Xem chi tiết, duyệt, sửa phiếu"><Icon name="dots" size={20} /></button>
+                    {(manageAllExpenses || r.created_by === userId) && r.status === 'pending' && (
+                      <button className="row-icon danger" onClick={() => remove(r)} aria-label={`Xoá phiếu ${expenseCode(r.expense_no)}`} title="Xoá phiếu"><Icon name="trash" size={19} /></button>
+                    )}
                   </div>
                 </td>
               </tr>

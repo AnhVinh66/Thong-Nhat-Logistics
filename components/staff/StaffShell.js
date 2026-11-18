@@ -7,6 +7,7 @@ import { supabase, LOGIN_DOMAIN, displayLogin } from '../../lib/supabase';
 import Logo from '../Logo';
 import Icon from '../Icon';
 import DriverApp from './DriverApp';
+import ChangePassword from './ChangePassword';
 import InstallApp, { useServiceWorker } from './InstallApp';
 import { RoleProvider, canView, roleLabel } from './Role';
 
@@ -122,7 +123,7 @@ export default function StaffShell({ children }) {
   const r = role.role;
   return (
     <RoleProvider role={r} userId={userId}>
-      <AdminLayout role={r} pathname={pathname} login={displayLogin(session.user.email)} onLogout={() => supabase.auth.signOut()}>
+      <AdminLayout role={r} pathname={pathname} email={session.user.email} login={displayLogin(session.user.email)} onLogout={() => supabase.auth.signOut()}>
         {canView(r, pathname) ? children : (
           <div className="card">
             <h1 style={{ fontSize: '1.4rem' }}>Bạn không có quyền truy cập mục này</h1>
@@ -184,8 +185,9 @@ function useTheme() {
   return [theme, () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))];
 }
 
-function AdminLayout({ role, pathname, login, onLogout, children }) {
+function AdminLayout({ role, pathname, email, login, onLogout, children }) {
   const [open, setOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
   const [theme, toggleTheme] = useTheme();
   const isActive = (h) => (h === '/nhan-vien/' ? pathname.replace(/\/$/, '') === '/nhan-vien' : pathname.startsWith(h));
   const visible = sections
@@ -235,6 +237,9 @@ function AdminLayout({ role, pathname, login, onLogout, children }) {
             <span className="side-avatar" aria-hidden="true">{(login[0] || '?').toUpperCase()}</span>
             <span className="side-login" title={login}>{login}<small className="side-role">{roleLabel[role]}</small></span>
           </div>
+          <button type="button" className="side-link side-theme" onClick={() => setPwOpen(true)}>
+            <Icon name="key" size={20} /><span>Đổi mật khẩu</span>
+          </button>
           <button
             type="button"
             className="side-link side-theme"
@@ -262,6 +267,7 @@ function AdminLayout({ role, pathname, login, onLogout, children }) {
           <span className="admin-top-title">{current?.label || 'Nhân viên'}</span>
         </header>
         <main className="admin-content">{children}</main>
+        {pwOpen && <ChangePassword email={email} onClose={() => setPwOpen(false)} />}
       </div>
     </div>
   );

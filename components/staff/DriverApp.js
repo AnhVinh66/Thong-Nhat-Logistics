@@ -6,6 +6,7 @@ import Icon from '../Icon';
 import DeliveryDocs, { uploadDocs } from './DeliveryDocs';
 import InstallApp from './InstallApp';
 import DriverBonus from './DriverBonus';
+import ChangePassword from './ChangePassword';
 
 const todayISO = () => {
   const d = new Date();
@@ -56,6 +57,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
   const [busyKey, setBusyKey] = useState('');
   const [toast, setToast] = useState(null);
   const [docsFor, setDocsFor] = useState(null);
+  const [pwOpen, setPwOpen] = useState(false);
 
   const loadCounts = useCallback(async () => {
     const { data, error } = await supabase.from('delivery_photos').select('order_id, stop_id, kind');
@@ -214,10 +216,13 @@ export default function DriverApp({ driverName, email, onLogout }) {
         })}
 
         {!loading && <button className="drv-reload" onClick={load}>Tải lại danh sách</button>}
+        <button className="drv-reload drv-pw" onClick={() => setPwOpen(true)}>Đổi mật khẩu</button>
         <InstallApp compact />
       </main>
 
       {toast && <div className={`drv-toast ${toast.ok ? '' : 'bad'}`} role="status">{toast.text}</div>}
+
+      {pwOpen && <ChangePassword email={email} onClose={() => setPwOpen(false)} />}
 
       {docsFor && (
         <DeliveryDocs

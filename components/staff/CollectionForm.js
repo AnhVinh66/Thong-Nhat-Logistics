@@ -185,6 +185,10 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
     if (method === 'transfer' && !bankId) return setErr('Vui lòng chọn ngân hàng nhận tiền.');
     if (!customer) return setErr('Vui lòng chọn khách hàng (hoặc nhập mã KH).');
     if (!date) return setErr('Vui lòng chọn ngày thu tiền.');
+    // Bắt buộc có ít nhất 1 ảnh bill (ảnh mới gắn hoặc ảnh đã lưu còn giữ lại)
+    if (files.length + oldPhotos.filter((p) => !removed.includes(p.id)).length === 0) {
+      return setErr('Vui lòng gắn ít nhất 1 ảnh bill thu tiền trước khi tạo đề xuất Thu.');
+    }
 
     const items = [];
     for (const o of orders) {
@@ -326,10 +330,10 @@ export default function CollectionForm({ onClose, onSaved, edit = null }) {
         </div>
 
         <div className="field">
-          <span className="label-like">Hình ảnh bill thu tiền</span>
+          <span className="label-like">Hình ảnh bill thu tiền *</span>
           <div className="bill-row">
             <DropZone id="c-files" onFiles={addFiles} />
-            {files.length === 0 && shownOld.length === 0 && <span className="muted small">Chưa có ảnh (không bắt buộc)</span>}
+            {files.length === 0 && shownOld.length === 0 && <span className="sum-warn small">Chưa có ảnh – bắt buộc gắn ít nhất 1 ảnh bill</span>}
             <ul className="bill-thumbs">
               {shownOld.map((p, i) => (
                 <li key={p.id}>

@@ -67,6 +67,7 @@ export default function Page() {
   const [pickups, setPickups] = useState([]);
   const [drivers, setDrivers] = useState(defaultDrivers);
   const [pickMsg, setPickMsg] = useState(null); // { ok: bool, text }
+  const [pickNew, setPickNew] = useState(false); // đang gõ điểm lấy hàng mới (chưa có trong danh sách)
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [q, setQ] = useState('');
@@ -216,12 +217,14 @@ export default function Page() {
       });
     }
     setPickups((s) => [...s, address].sort((a, b) => a.localeCompare(b, 'vi')));
+    setPickNew(false);
     setPickMsg({ ok: true, text: 'Đã lưu điểm lấy hàng.' });
   }
 
   function openEdit(r) {
     setFormErr('');
     setPickMsg(null);
+    setPickNew(false);
     if (!r) return setEditing({ ...blank, stops: [{ ...blankStop }, { ...blankStop }] });
     const stops = sortedStops(r).map((st) => ({
       id: st.id,
@@ -398,24 +401,58 @@ export default function Page() {
 
   const multi = editing?.order_type === 'multi';
   const liveTotal = editing && multi ? editing.stops.reduce((a, st) => a + Number(st.fee || 0), 0) : 0;
-  const pickupField = (label) => (
-    <div className="field">
-      <label htmlFor="o-from">{label}</label>
-      <div className="input-plus">
-        <input
-          id="o-from"
-          list="pickup-list"
-          value={editing.pickup}
-          onChange={(e) => { setPickMsg(null); setField('pickup')(e); }}
-          placeholder={pickups.length ? 'Chọn điểm đã lưu hoặc nhập mới' : 'Nhập địa chỉ lấy hàng'}
-          autoComplete="off"
-        />
-        <button type="button" className="btn btn-outline plus-btn" onClick={savePickup} aria-label="Lưu điểm lấy hàng này" title="Lưu điểm lấy hàng này">+</button>
+  // Điểm lấy hàng: ô chọn giống ô Xe; chọn "Nhập điểm lấy hàng mới" để gõ địa chỉ khác rồi bấm + để lưu lại
+  const pickupField = (label) => {
+    const v = editing.pickup || '';
+    const saved = pickups.includes(v);
+    const typing = pickNew || !pickups.length;
+    return (
+      <div className="field">
+        <label htmlFor="o-from">{label}</label>
+        <div className="input-plus">
+          {typing ? (
+            <input
+              id="o-from"
+              value={v}
+              autoFocus={pickNew}
+              onChange={(e) => { setPickMsg(null); setField('pickup')(e); }}
+              placeholder="Nhập địa chỉ lấy hàng mới"
+              autoComplete="off"
+            />
+          ) : (
+            <select
+              id="o-from"
+              value={v}
+              onChange={(e) => {
+                setPickMsg(null);
+                if (e.target.value === '__new') { setPickNew(true); setEditing((s) => ({ ...s, pickup: '' })); }
+                else setEditing((s) => ({ ...s, pickup: e.target.value }));
+              }}
+            >
+              <option value="">— Chọn điểm lấy hàng —</option>
+              {v && !saved && <option value={v}>{v} (chưa lưu)</option>}
+              {pickups.map((x) => <option key={x} value={x}>{x}</option>)}
+              <option value="__new">＋ Nhập điểm lấy hàng mới…</option>
+            </select>
+          )}
+          <button
+            type="button"
+            className="btn btn-outline plus-btn"
+            onClick={savePickup}
+            disabled={!v.trim() || saved}
+            aria-label="Lưu điểm lấy hàng này vào danh sách"
+            title={saved ? 'Điểm này đã có trong danh sách' : 'Lưu điểm lấy hàng này vào danh sách'}
+          >+</button>
+        </div>
+        {typing && pickups.length > 0 && (
+          <button type="button" className="link-btn" onClick={() => { setPickNew(false); setPickMsg(null); setEditing((s) => ({ ...s, pickup: '' })); }}>
+            ← Chọn từ danh sách điểm đã lưu
+          </button>
+        )}
+        {pickMsg && <p className={pickMsg.ok ? 'ok-msg' : 'err'} role="status">{pickMsg.text}</p>}
       </div>
-      <datalist id="pickup-list">{pickups.map((x) => <option key={x} value={x} />)}</datalist>
-      {pickMsg && <p className={pickMsg.ok ? 'ok-msg' : 'err'} role="status">{pickMsg.text}</p>}
-    </div>
-  );
+    );
+  };
 
   const customerOptions = (
     <>

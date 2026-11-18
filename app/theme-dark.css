@@ -208,6 +208,9 @@ html[data-theme="dark"] .admin .drv-day-codes span.part { background: hsl(48, 45
 html[data-theme="dark"] .admin .drv-period { background: hsl(218, 31%, 18%); }
 html[data-theme="dark"] .admin .drv-period.p-am { background: hsl(48, 45%, 24%); color: hsl(39, 90%, 80%); }
 html[data-theme="dark"] .admin .drv-period.p-pm { background: hsl(253, 45%, 20%); color: hsl(253, 58%, 71%); }
+html[data-theme="dark"] .admin .link-btn { color: hsl(217, 90%, 71%); }
+html[data-theme="dark"] .admin .row-icon { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .row-icon.danger:hover { background: hsl(0, 45%, 16%); }
 @media (max-width: 1080px) {
 html[data-theme="dark"] .admin .nav { background: hsl(220, 30%, 14%); }
 }

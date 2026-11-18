@@ -1004,3 +1004,15 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .drv-period.p-eve { background: #1e293b; color: #e2e8f0; }
 .drv-fee { font-size: 1rem; color: var(--text); }
 .drv-fee strong { color: var(--ok); font-size: 1.15rem; }
+
+.link-btn { justify-self: start; border: 0; background: transparent; padding: 2px 0; font: inherit; font-size: .85rem; font-weight: 600; color: #0b57d0; cursor: pointer; }
+.link-btn:hover { text-decoration: underline; }
+.plus-btn:disabled { opacity: .4; cursor: default; }
+
+/* Nút biểu tượng (xem ⋯ / xoá 🗑) trong bảng */
+.row-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; color: var(--navy); cursor: pointer; padding: 0; transition: background .15s, border-color .15s, color .15s; }
+.row-icon:hover { border-color: var(--navy); background: var(--soft); }
+.row-icon.danger { color: var(--err); }
+.row-icon.danger:hover { border-color: var(--err); background: #fef2f2; }
+.exp-table .x-act { width: 96px; }
+.exp-table .x-act .actions { flex-wrap: nowrap; }
