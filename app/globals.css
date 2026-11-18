@@ -760,7 +760,7 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 /* ===== Bố cục cân đối theo kích thước màn hình ===== */
 /* Màn hình máy tính: nội dung co giãn theo chiều rộng, căn giữa, không dồn sang trái */
 @media (min-width: 961px) {
-  .admin-content { max-width: 2600px; margin-inline: auto; padding: 28px clamp(24px, 2.6vw, 64px) 96px; }
+  .admin-content { max-width: none; margin-inline: 0; padding: 28px clamp(24px, 1.8vw, 48px) 96px; }
 }
 /* Tổng quan: các khối cao bằng nhau; ô cuối (Lịch 7 ngày) trải hết hàng, không nằm lẻ một bên */
 .dash-grid { align-items: stretch; }
@@ -947,3 +947,15 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .side-theme .theme-switch.on { background: #2563eb; }
 .side-theme .theme-switch.on span { transform: translateX(18px); }
 .side-theme[aria-checked="true"] svg { color: #60a5fa; opacity: 1; }
+
+/* Thẻ ngân hàng: mọi thẻ cao bằng nhau, các dòng số liệu và nút thẳng hàng */
+.bank-grid { align-items: stretch; }
+.bank-card { display: flex; flex-direction: column; gap: 14px; }
+.bank-holder { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bank-acc { display: block; }
+.bank-stats dd { min-height: 1.6em; }
+.bank-last { margin: 0; min-height: 1.5em; }
+.bank-actions { margin-top: auto; }
+.bank-actions { flex-wrap: nowrap; }
+.bank-actions .btn { padding-left: 12px; padding-right: 12px; white-space: nowrap; }
+.bank-grid { grid-template-columns: repeat(auto-fill, minmax(390px, 1fr)); }

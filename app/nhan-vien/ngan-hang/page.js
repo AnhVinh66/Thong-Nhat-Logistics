@@ -108,7 +108,7 @@ export default function Page() {
                 <span className="bank-info">
                   <strong className="bank-name">{b.bank_name}</strong>
                   <span className="bank-acc">{b.account_number}</span>
-                  <span className="muted small">{b.account_name}</span>
+                  <span className="muted small bank-holder" title={b.account_name}>{b.account_name}</span>
                 </span>
               </Link>
               <dl className="bank-stats">
@@ -117,7 +117,7 @@ export default function Page() {
                 <div><dt>Tiền ra</dt><dd style={{ color: 'var(--err)' }}>{commas(s?.total_out || 0)}</dd></div>
                 <div><dt>Giao dịch</dt><dd>{commas(s?.txn_count || 0)}</dd></div>
               </dl>
-              <p className="muted small" style={{ margin: 0 }}>{last ? `Giao dịch mới nhất: ${last.date} ${last.time}` : 'Chưa có giao dịch nào'}</p>
+              <p className="muted small bank-last">{last ? `Giao dịch mới nhất: ${last.date} ${last.time}` : 'Chưa có giao dịch nào'}</p>
               <div className="bank-actions">
                 <Link href={`/nhan-vien/ngan-hang/chi-tiet/?id=${b.id}`} className="btn btn-outline sm">Xem giao dịch</Link>
                 <button className="btn btn-primary sm" onClick={() => setUpload(b)}>Tải sao kê</button>

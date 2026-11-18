@@ -1,5 +1,13 @@
+import { Inter } from 'next/font/google';
 import StaffShell from '../../components/staff/StaffShell';
 import '../theme-dark.css'; // giao diện Tối của Thống Nhất CMS (sinh từ scripts/gen-dark-css.mjs)
+
+// Phông chữ riêng của Thống Nhất CMS (website công khai vẫn dùng Be Vietnam Pro)
+const cmsFont = Inter({
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+});
 
 export const metadata = {
   // Mỗi mục có file layout.js riêng đặt tiêu đề: "<Tên mục> | Thống Nhất CMS". Mục mới: thêm layout.js tương tự.
@@ -17,5 +25,9 @@ export const metadata = {
 };
 
 export default function Layout({ children }) {
-  return <StaffShell>{children}</StaffShell>;
+  return (
+    <div className={`cms-root ${cmsFont.className}`}>
+      <StaffShell>{children}</StaffShell>
+    </div>
+  );
 }
