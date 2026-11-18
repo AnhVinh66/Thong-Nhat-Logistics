@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { supabase, vnd, orderCode, stopCode } from '../../../lib/supabase';
+import { supabase, vnd, orderCode, stopCode, cusName } from '../../../lib/supabase';
 import { drivers as defaultDrivers } from '../../../lib/site';
 import { useRole } from '../../../components/staff/Role';
 import Modal from '../../../components/staff/Modal';
@@ -16,7 +16,7 @@ const mondayOf = (iso) => { const d = parse(iso); d.setDate(d.getDate() - ((d.ge
 const dm = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const dmy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const DOW = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, trip_seq, trip_period, status, fee, customers(name), order_stops(id, address, stop_no, position, status, customers(name))';
+const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, trip_seq, trip_period, status, fee, customers(customer_no, name), order_stops(id, address, stop_no, position, status, customers(customer_no, name))';
 
 // Thứ tự trong một ô (xe + ngày): theo số chuyến đã xếp, chuyến chưa có số xếp sau theo mã đơn
 const PERIODS = [
@@ -38,8 +38,8 @@ function routeOf(o) {
   return `${o.pickup} → ${o.delivery}`;
 }
 const whoOf = (o) => (o.order_type === 'multi'
-  ? [...new Set((o.order_stops || []).map((s) => s.customers?.name).filter(Boolean))].join(', ')
-  : o.customers?.name) || '';
+  ? [...new Set((o.order_stops || []).map((s) => cusName(s.customers)).filter(Boolean))].join(', ')
+  : cusName(o.customers)) || '';
 
 export default function Page() {
   const { editPlan } = useRole();
@@ -257,7 +257,7 @@ export default function Page() {
                                             <span className="ts-code">{stopCode(o.order_no, s.stop_no)}</span>
                                             <span className="ts-state">{s.status === 'done' ? '✓ Xong' : 'Chưa xong'}</span>
                                           </span>
-                                          <span className="ts-name">{s.customers?.name}{s.address ? ` – ${s.address}` : ''}</span>
+                                          <span className="ts-name">{cusName(s.customers)}{s.address ? ` – ${s.address}` : ''}</span>
                                         </li>
                                       ))}
                                     </ul>

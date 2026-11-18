@@ -964,3 +964,43 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 /* Lối vào Thống Nhất CMS trong menu điện thoại / máy tính bảng (trên máy tính đã có ở thanh trên cùng) */
 .nav .nav-cms { display: none; align-items: center; gap: 8px; font-weight: 700; color: var(--navy); }
 @media (max-width: 1080px) { .nav .nav-cms { display: flex; } }
+
+/* Khách hàng: mã KH + tên */
+.cus-name { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cus-name .cus-code { margin: 0; }
+
+/* ===== Tổng quan: biểu đồ đơn hàng & doanh thu theo tuần ===== */
+:root { --chart-1: #2a78d6; --chart-2: #eb6834; }
+.wc { margin: 0 0 18px; }
+.wc-toggle { border: 0; background: transparent; cursor: pointer; font: inherit; }
+.wc-heroes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.wc-hero { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+.wc-hero-label { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.wc-hero-value { font-size: 1.4rem; color: var(--navy); }
+.wc-delta { font-size: .8rem; color: var(--muted); }
+.wc-delta.up { color: var(--ok); }
+.wc-delta.down { color: var(--err); }
+.wc-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.wc-fig { margin: 0; min-width: 0; }
+.wc-fig figcaption { font-size: .88rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.wc-chart { position: relative; }
+.wc-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.wc-grid { stroke: var(--line); stroke-width: 1; }
+.wc-axis { font-size: 12px; fill: var(--muted); }
+.wc-axis.wc-now { fill: var(--text); font-weight: 700; }
+.wc-val { font-size: 12px; font-weight: 700; fill: var(--text); }
+.wc-chart rect:focus { outline: none; }
+.wc-chart rect:focus-visible { outline: 2px solid var(--orange); }
+.wc-tip { position: absolute; top: 2px; transform: translateX(-50%); display: grid; gap: 2px; min-width: 150px; padding: 8px 10px; border-radius: 10px; background: #0b2545; color: #fff; font-size: .8rem; pointer-events: none; box-shadow: 0 8px 20px rgba(0, 0, 0, .2); z-index: 5; white-space: nowrap; }
+.wc-tip i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.wc-tip .muted { color: #c7d3e6; }
+@media (max-width: 1300px) { .wc-grid3 { grid-template-columns: 1fr 1fr; } }
+
+/* App lái xe: buổi chạy và cước của chuyến */
+.drv-badges { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.drv-period { font-size: .95rem; font-weight: 800; padding: 6px 12px; border-radius: 999px; background: #eef1f6; color: var(--muted); }
+.drv-period.p-am { background: #fff3c4; color: #8a5a00; }
+.drv-period.p-pm { background: #e1d9ff; color: #4a2fb0; }
+.drv-period.p-eve { background: #1e293b; color: #e2e8f0; }
+.drv-fee { font-size: 1rem; color: var(--text); }
+.drv-fee strong { color: var(--ok); font-size: 1.15rem; }

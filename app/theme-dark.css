@@ -11,6 +11,8 @@ html[data-theme="dark"] .admin {
   --err: #f87171;
   --orange-d: #fb923c;
   --gold: #fbbf24;
+  --chart-1: #3987e5; /* màu biểu đồ cho nền tối (bộ màu đã kiểm tra) */
+  --chart-2: #d95926;
   --shadow: 0 10px 30px rgba(0, 0, 0, .45);
   color-scheme: dark;
   color: var(--text); /* chữ kế thừa từ body vẫn là màu tối -> đặt lại */
@@ -203,6 +205,9 @@ html[data-theme="dark"] .admin .drv-day-bonus { color: hsl(26, 90%, 75%); }
 html[data-theme="dark"] .admin .drv-day-codes span { background: hsl(218, 31%, 18%); color: hsl(215, 16%, 69%); }
 html[data-theme="dark"] .admin .drv-day-codes span.done { background: hsl(141, 45%, 20%); color: hsl(143, 64%, 82%); }
 html[data-theme="dark"] .admin .drv-day-codes span.part { background: hsl(48, 45%, 24%); color: hsl(23, 83%, 78%); }
+html[data-theme="dark"] .admin .drv-period { background: hsl(218, 31%, 18%); }
+html[data-theme="dark"] .admin .drv-period.p-am { background: hsl(48, 45%, 24%); color: hsl(39, 90%, 80%); }
+html[data-theme="dark"] .admin .drv-period.p-pm { background: hsl(253, 45%, 20%); color: hsl(253, 58%, 71%); }
 @media (max-width: 1080px) {
 html[data-theme="dark"] .admin .nav { background: hsl(220, 30%, 14%); }
 }

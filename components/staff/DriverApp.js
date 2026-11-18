@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, orderCode, stopCode } from '../../lib/supabase';
+import { supabase, orderCode, stopCode, vnd } from '../../lib/supabase';
 import Icon from '../Icon';
 import DeliveryDocs, { uploadDocs } from './DeliveryDocs';
 import InstallApp from './InstallApp';
@@ -12,6 +12,9 @@ const todayISO = () => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
 const dmy = (iso) => (iso ? iso.split('-').reverse().join('/') : 'Chưa có ngày');
+// Buổi chạy trong Kế hoạch chạy xe
+const PERIOD = { am: 'Sáng', pm: 'Chiều', eve: 'Tối' };
+const periodRank = (o) => ({ am: 0, pm: 1, eve: 2 })[o.trip_period] ?? 3;
 const mapsUrl = (addr) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr || '')}`;
 
 // Các điểm giao của một đơn (đơn 1 điểm cũng quy về một điểm)
@@ -21,7 +24,7 @@ function pointsOf(o) {
       .sort((a, b) => a.position - b.position)
       .map((s, i) => ({
         key: `${o.id}|${s.id}`, stopId: s.id, no: i + 1, code: stopCode(o.order_no, s.stop_no),
-        name: s.customers?.name, phone: s.customers?.phone, address: s.address, cargo: s.cargo, weight: s.weight,
+        name: s.customers?.name, phone: s.customers?.phone, address: s.address, cargo: s.cargo, weight: s.weight, fee: s.fee,
       }));
   }
   return [{
@@ -70,7 +73,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
     setLoading(true);
     const { data, error } = await supabase
       .from('orders')
-      .select('id, order_no, order_type, pickup, delivery, cargo, weight, plate, truck, ship_date, fee, status, customers(name, phone), order_stops(id, position, stop_no, address, cargo, weight, fee, status, customers(name, phone))')
+      .select('id, order_no, order_type, pickup, delivery, cargo, weight, plate, truck, ship_date, fee, status, trip_period, trip_seq, customers(name, phone), order_stops(id, position, stop_no, address, cargo, weight, fee, status, customers(name, phone))')
       .order('ship_date', { ascending: true, nullsFirst: false });
     if (error) setErr('Không tải được danh sách chuyến. Bấm "Tải lại danh sách" bên dưới hoặc báo văn phòng.');
     else {
@@ -93,7 +96,8 @@ export default function DriverApp({ driverName, email, onLogout }) {
 
   const list = useMemo(() => {
     const today = todayISO();
-    const now = orders.filter((o) => !o.ship_date || o.ship_date >= today);
+    const byPlan = (a, b) => (a.ship_date || '9999').localeCompare(b.ship_date || '9999') || periodRank(a) - periodRank(b) || (a.trip_seq ?? 1e9) - (b.trip_seq ?? 1e9) || a.order_no - b.order_no;
+    const now = orders.filter((o) => !o.ship_date || o.ship_date >= today).sort(byPlan);
     const old = orders.filter((o) => o.ship_date && o.ship_date < today).reverse();
     return { now, old };
   }, [orders]);
@@ -152,6 +156,13 @@ export default function DriverApp({ driverName, email, onLogout }) {
                 <strong>{orderCode(o.order_no)}</strong>
                 <span>{dmy(o.ship_date)}</span>
               </div>
+              <div className="drv-badges">
+                <span className={`drv-period p-${o.trip_period || 'none'}`}>
+                  {o.trip_period ? `Chạy ${PERIOD[o.trip_period].toLowerCase()}` : 'Chưa xếp buổi'}
+                  {o.trip_seq ? ` · Chuyến ${o.trip_seq}` : ''}
+                </span>
+                <span className="drv-fee">Cước: <strong>{vnd(o.fee)}</strong></span>
+              </div>
               <p className="drv-meta">
                 <Icon name="truck" size={18} /> {o.plate || 'Chưa gán xe'}
               </p>
@@ -180,6 +191,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
                       </a>
                     )}
                     {(p.cargo || p.weight) && <p className="drv-cargo">{[p.cargo, p.weight].filter(Boolean).join(' · ')}</p>}
+                    {points.length > 1 && p.fee != null && <p className="drv-cargo">Cước điểm này: <strong>{vnd(p.fee)}</strong></p>}
 
                     <div className="drv-shots">
                       <ShotButton label="Chụp biên bản" count={c.bien_ban} busy={busyKey === `${p.key}|bien_ban`}

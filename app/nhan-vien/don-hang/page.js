@@ -1,7 +1,9 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, vnd, orderCode, stopCode } from '../../../lib/supabase';
+import { supabase, vnd, orderCode, stopCode, customerCode, cusName, displayLogin } from '../../../lib/supabase';
+import { roleLabel } from '../../../components/staff/Role';
+import CusName from '../../../components/staff/CusName';
 import MoneyInput from '../../../components/staff/MoneyInput';
 import FeePopup from '../../../components/staff/FeePopup';
 import { drivers as defaultDrivers } from '../../../lib/site';
@@ -49,6 +51,16 @@ const sortedStops = (r) => [...(r.order_stops || [])].sort((a, b) => a.position 
 export default function Page() {
   const { addOrder, editOrder, deleteOrder } = useRole();
   const [fStatus, setFStatus] = useState(''); // '' | incomplete | done
+  const [fSales, setFSales] = useState(''); // '' | 'none' | user_id nhân viên phụ trách khách
+  const [fPay, setFPay] = useState(''); // '' | paid | part | none | debt
+  const [fFrom, setFFrom] = useState('');
+  const [fTo, setFTo] = useState('');
+  const [staffList, setStaffList] = useState([]);
+  useEffect(() => {
+    supabase.from('staff_roles').select('user_id, full_name, email, role').in('role', ['staff', 'sales', 'accountant', 'dispatcher'])
+      .then(({ data }) => setStaffList((data || []).map((u) => ({ ...u, name: u.full_name || displayLogin(u.email) }))
+        .sort((a, b) => (a.role === 'sales' ? 0 : 1) - (b.role === 'sales' ? 0 : 1) || a.name.localeCompare(b.name, 'vi'))));
+  }, []);
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -103,9 +115,9 @@ export default function Page() {
     const [o, c, v, p] = await Promise.all([
       supabase
         .from('orders')
-        .select('*, customers(name, phone), order_stops(*, customers(name, phone))')
+        .select('*, customers(customer_no, name, phone, sales_user_id), order_stops(*, customers(customer_no, name, phone, sales_user_id))')
         .order('created_at', { ascending: false }),
-      supabase.from('customers').select('id, name, phone').order('name'),
+      supabase.from('customers').select('id, customer_no, name, phone').order('name'),
       supabase.from('vehicles').select('plate, payload_tons, volume_cbm').order('plate'),
       supabase.from('pickup_points').select('address').order('address'),
     ]);
@@ -146,15 +158,34 @@ export default function Page() {
 
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
-    const list = fStatus ? rows.filter((r) => (r.status || 'incomplete') === fStatus) : rows;
+    // Khách hàng của đơn (đơn nhiều điểm: khách của mọi điểm trả)
+    const owners = (r) => (r.order_type === 'multi' ? (r.order_stops || []).map((st) => st.customers?.sales_user_id || null) : [r.customers?.sales_user_id || null]);
+    const payOf = (r) => {
+      const fee = Number(r.fee || 0);
+      const got = Number(paid.byOrder[r.id] || 0);
+      return got >= fee && fee > 0 ? 'paid' : got > 0 ? 'part' : 'none';
+    };
+    const list = rows.filter((r) => {
+      if (fStatus && (r.status || 'incomplete') !== fStatus) return false;
+      if (fSales && !owners(r).some((o) => (fSales === 'none' ? !o : o === fSales))) return false;
+      if (fPay) {
+        const st = payOf(r);
+        if (fPay === 'debt' ? st === 'paid' : st !== fPay) return false;
+      }
+      if (fFrom && (!r.ship_date || r.ship_date < fFrom)) return false;
+      if (fTo && (!r.ship_date || r.ship_date > fTo)) return false;
+      return true;
+    });
     if (!s) return list;
     return list.filter((r) => {
-      const fields = [orderCode(r.order_no), r.customers?.name, r.pickup, r.delivery, r.cargo, r.plate, r.driver];
-      sortedStops(r).forEach((st) => fields.push(stopCode(r.order_no, st.stop_no), st.customers?.name, st.address, st.cargo));
+      const fields = [orderCode(r.order_no), cusName(r.customers), r.pickup, r.delivery, r.cargo, r.plate, r.driver];
+      sortedStops(r).forEach((st) => fields.push(stopCode(r.order_no, st.stop_no), cusName(st.customers), st.address, st.cargo));
       return fields.some((v) => (v || '').toLowerCase().includes(s));
     });
-  }, [rows, q, fStatus]);
+  }, [rows, q, fStatus, fSales, fPay, fFrom, fTo, paid]);
 
+  const anyFilter = !!(q || fStatus || fSales || fPay || fFrom || fTo);
+  const clearFilters = () => { setQ(''); setFStatus(''); setFSales(''); setFPay(''); setFFrom(''); setFTo(''); };
   const totalFee = useMemo(() => shown.reduce((a, r) => a + Number(r.fee), 0), [shown]);
 
   const setField = (k) => (e) => setEditing((s) => ({ ...s, [k]: e.target.value }));
@@ -389,7 +420,7 @@ export default function Page() {
   const customerOptions = (
     <>
       <option value="">Chọn khách hàng</option>
-      {customers.map((c) => <option key={c.id} value={c.id}>{c.name} – {c.phone}</option>)}
+      {customers.map((c) => <option key={c.id} value={c.id}>{customerCode(c.customer_no)} – {c.name} – {c.phone}</option>)}
     </>
   );
 
@@ -415,7 +446,23 @@ export default function Page() {
           <option value="incomplete">Chưa hoàn thành</option>
           <option value="done">Hoàn thành</option>
         </select>
+        <select aria-label="Nhân viên kinh doanh phụ trách khách" value={fSales} onChange={(e) => setFSales(e.target.value)}>
+          <option value="">Mọi nhân viên kinh doanh</option>
+          {staffList.map((u) => <option key={u.user_id} value={u.user_id}>{u.name} – {roleLabel[u.role]}</option>)}
+          <option value="none">Khách chưa giao cho ai</option>
+        </select>
+        <select aria-label="Tình trạng thu tiền" value={fPay} onChange={(e) => setFPay(e.target.value)}>
+          <option value="">Mọi tình trạng thu</option>
+          <option value="paid">Đã thu đủ</option>
+          <option value="part">Thu một phần</option>
+          <option value="none">Chưa thu</option>
+          <option value="debt">Còn nợ (chưa thu hoặc thu thiếu)</option>
+        </select>
+        <span className="date-filter">Từ <DateInput aria-label="Ngày vận chuyển từ" value={fFrom} onChange={setFFrom} /></span>
+        <span className="date-filter">Đến <DateInput aria-label="Ngày vận chuyển đến" value={fTo} onChange={setFTo} /></span>
+        {anyFilter && <button type="button" className="btn btn-outline sm" onClick={clearFilters}>Xoá bộ lọc</button>}
       </div>
+      {anyFilter && <p className="muted small" style={{ margin: '-4px 0 10px' }}>Đang lọc: {shown.length} / {rows.length} đơn hàng. Lọc thời gian theo ngày vận chuyển.</p>}
 
       {err && <p className="err" role="alert">{err}</p>}
       {notice && <p className="ok-msg" role="status" style={{ marginBottom: 10 }}>{notice.text}</p>}
@@ -439,7 +486,7 @@ export default function Page() {
                       {isMulti ? (
                         <><span className="tag">Nhiều điểm</span><div className="muted small">{stops.length} điểm trả</div></>
                       ) : (
-                        <>{r.customers?.name}<div className="muted small">{r.customers?.phone}</div></>
+                        <><CusName c={r.customers} /><div className="muted small">{r.customers?.phone}</div></>
                       )}
                     </td>
                     <td>{r.pickup}<div className="muted small">{isMulti ? `→ ${stops.length} điểm trả hàng` : `→ ${r.delivery}`}</div></td>
@@ -470,7 +517,7 @@ export default function Page() {
                   {isMulti && stops.map((st, si) => (
                     <tr key={st.id} className={`stop-row ${si === stops.length - 1 ? 'stop-row-last' : ''}`}>
                       <td><span className="stop-code">{stopCode(r.order_no, st.stop_no)}</span></td>
-                      <td>{st.customers?.name}<div className="muted small">{st.customers?.phone}</div></td>
+                      <td><CusName c={st.customers} /><div className="muted small">{st.customers?.phone}</div></td>
                       <td><span className="muted">→</span> {st.address}</td>
                       <td>{st.cargo}{st.weight && <div className="muted small">{st.weight}</div>}</td>
                       <td></td>
@@ -489,7 +536,7 @@ export default function Page() {
                           onClick={() => setDocsFor({
                             orderId: r.id,
                             stopId: st.id,
-                            title: `Chứng từ – ${stopCode(r.order_no, st.stop_no)} (${st.customers?.name || ''})`,
+                            title: `Chứng từ – ${stopCode(r.order_no, st.stop_no)} (${cusName(st.customers)})`,
                           })}
                         >
                           Chứng từ ({photoCounts[`${r.id}|${st.id}`] || 0})
