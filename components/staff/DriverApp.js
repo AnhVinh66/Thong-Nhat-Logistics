@@ -5,6 +5,7 @@ import { supabase, orderCode, stopCode } from '../../lib/supabase';
 import Icon from '../Icon';
 import DeliveryDocs, { uploadDocs } from './DeliveryDocs';
 import InstallApp from './InstallApp';
+import DriverBonus from './DriverBonus';
 
 const todayISO = () => {
   const d = new Date();
@@ -48,7 +49,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
   const [counts, setCounts] = useState({}); // "orderId|stopId" -> { bien_ban, bill }
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [tab, setTab] = useState('now'); // now | old
+  const [tab, setTab] = useState('now'); // now | old | bonus
   const [busyKey, setBusyKey] = useState('');
   const [toast, setToast] = useState(null);
   const [docsFor, setDocsFor] = useState(null);
@@ -69,7 +70,7 @@ export default function DriverApp({ driverName, email, onLogout }) {
     setLoading(true);
     const { data, error } = await supabase
       .from('orders')
-      .select('id, order_no, order_type, pickup, delivery, cargo, weight, plate, truck, ship_date, customers(name, phone), order_stops(id, position, stop_no, address, cargo, weight, customers(name, phone))')
+      .select('id, order_no, order_type, pickup, delivery, cargo, weight, plate, truck, ship_date, fee, status, customers(name, phone), order_stops(id, position, stop_no, address, cargo, weight, fee, status, customers(name, phone))')
       .order('ship_date', { ascending: true, nullsFirst: false });
     if (error) setErr('Không tải được danh sách chuyến. Bấm "Tải lại danh sách" bên dưới hoặc báo văn phòng.');
     else {
@@ -130,16 +131,20 @@ export default function DriverApp({ driverName, email, onLogout }) {
         <button role="tab" aria-selected={tab === 'old'} className={tab === 'old' ? 'on' : ''} onClick={() => setTab('old')}>
           Đã qua ({list.old.length})
         </button>
+        <button role="tab" aria-selected={tab === 'bonus'} className={tab === 'bonus' ? 'on' : ''} onClick={() => setTab('bonus')}>
+          Thưởng
+        </button>
       </div>
 
       <main className="drv-main">
         {err && <p className="err" role="alert">{err}</p>}
         {loading && !orders.length && <p className="drv-empty">Đang tải chuyến...</p>}
-        {!loading && !shown.length && (
+        {tab === 'bonus' && !loading && <DriverBonus orders={orders} />}
+        {tab !== 'bonus' && !loading && !shown.length && (
           <p className="drv-empty">{tab === 'now' ? 'Hiện chưa có chuyến nào được giao cho bạn.' : 'Chưa có chuyến cũ.'}</p>
         )}
 
-        {shown.map((o) => {
+        {tab !== 'bonus' && shown.map((o) => {
           const points = pointsOf(o);
           return (
             <article className="drv-order" key={o.id}>

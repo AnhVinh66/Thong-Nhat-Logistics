@@ -157,6 +157,7 @@ const sections = [
     links: [
       { href: '/nhan-vien/khach-hang/', label: 'Khách hàng', icon: 'users' },
       { href: '/nhan-vien/xe/', label: 'Danh sách xe', icon: 'truck' },
+      { href: '/nhan-vien/lai-xe/', label: 'Lái xe', icon: 'wheel' },
     ],
   },
   {
