@@ -1,0 +1,44 @@
+name: Tin nóng tự động
+
+# Mỗi ngày kiểm tra lúc 08:30 (giờ Việt Nam); script chỉ tạo tin mới khi đã đủ 2 ngày kể từ tin tự động gần nhất.
+on:
+  schedule:
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Tạo tin ngay, bỏ qua giới hạn 2 ngày 1 tin'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lấy tin nóng từ RSS các báo
+        run: node scripts/fetch-news.mjs
+        env:
+          FORCE: ${{ inputs.force && '1' || '' }}
+      - name: Đăng tin và deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "$(git status --porcelain content)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add content
+            git commit -m "Tin nóng tự động $(date -u +%Y-%m-%d)"
+            git push
+            # Commit do GITHUB_TOKEN tạo ra không tự kích hoạt workflow khác, nên gọi deploy trực tiếp
+            gh workflow run deploy.yml --ref "${GITHUB_REF_NAME}"
+          else
+            echo "Không có tin mới lần này."
+          fi

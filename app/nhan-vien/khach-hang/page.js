@@ -1,8 +1,8 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, customerTypes, vnd, customerCode, fmtDate, orderCode, stopCode } from '../../../lib/supabase';
-import { useRole } from '../../../components/staff/Role';
+import { supabase, customerTypes, vnd, customerCode, fmtDate, orderCode, stopCode, displayLogin } from '../../../lib/supabase';
+import { useRole, roleLabel } from '../../../components/staff/Role';
 import Modal from '../../../components/staff/Modal';
 
 const blank = { name: '', phone: '', email: '', address: '', company: '', tax_code: '', type: 'le', note: '' };
@@ -112,8 +112,8 @@ function CustomerDetail({ d }) {
 }
 
 export default function Page() {
-  const { addCustomer, editCustomer, deleteCustomer, assignCustomer } = useRole();
-  const [salesUsers, setSalesUsers] = useState([]);
+  const { addCustomer, editCustomer, deleteCustomer, assignCustomer, userId } = useRole();
+  const [staffList, setStaffList] = useState([]); // nhân viên văn phòng (để hiện tên người phụ trách)
   const [rows, setRows] = useState([]);
   const [debts, setDebts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -127,9 +127,10 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!assignCustomer) return;
-    supabase.from('staff_roles').select('user_id, full_name, email').eq('role', 'sales').then(({ data }) => setSalesUsers(data || []));
-  }, [assignCustomer]);
+    supabase.from('staff_roles').select('user_id, full_name, email, role').in('role', ['staff', 'sales', 'accountant', 'dispatcher'])
+      .then(({ data }) => setStaffList((data || []).map((u) => ({ ...u, name: u.full_name || displayLogin(u.email) }))));
+  }, []);
+  const staffById = useMemo(() => Object.fromEntries(staffList.map((u) => [u.user_id, u])), [staffList]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -210,7 +211,7 @@ export default function Page() {
   const openEdit = (r) => {
     setFormErr('');
     const { created_at, customer_no, ...rest } = r || {};
-    setEditing(r ? { ...blank, ...rest } : { ...blank });
+    setEditing(r ? { ...blank, ...rest } : { ...blank, sales_user_id: userId || '' });
   };
 
   return (
@@ -243,6 +244,7 @@ export default function Page() {
             <th>Liên hệ</th>
             <th>Công ty / MST</th>
             <th>Địa chỉ</th>
+            <th className="c-owner">Nhân viên phụ trách</th>
             <th className="c-debt">Công nợ</th>
             <th className="c-act c-act3"><span className="sr-only">Thao tác</span></th>
           </tr>
@@ -276,6 +278,13 @@ export default function Page() {
                   </div>
                 </td>
                 <td data-label="Địa chỉ" className="c-break"><div>{r.address || <span className="muted">—</span>}</div></td>
+                <td className="c-owner" data-label="Phụ trách">
+                  <div>
+                    {staffById[r.sales_user_id] ? (
+                      <><strong>{staffById[r.sales_user_id].name}</strong><span className="muted small" style={{ display: 'block' }}>{roleLabel[staffById[r.sales_user_id].role]}</span></>
+                    ) : <span className="muted">—</span>}
+                  </div>
+                </td>
                 <td className="c-debt" data-label="Công nợ">
                   <div>
                     <strong className={d?.debt ? 'debt-has' : 'debt-zero'}>{vnd(d?.debt || 0)}</strong>
@@ -300,19 +309,19 @@ export default function Page() {
               </tr>
               {isOpen && (
                 <tr className="cus-detail-row">
-                  <td colSpan={7}><CustomerDetail d={d} /></td>
+                  <td colSpan={8}><CustomerDetail d={d} /></td>
                 </tr>
               )}
               </Fragment>
             );
           })}
-          {!loading && !shown.length && <tr><td colSpan={7} className="muted">Chưa có khách hàng nào.</td></tr>}
-          {loading && <tr><td colSpan={7} className="muted">Đang tải...</td></tr>}
+          {!loading && !shown.length && <tr><td colSpan={8} className="muted">Chưa có khách hàng nào.</td></tr>}
+          {loading && <tr><td colSpan={8} className="muted">Đang tải...</td></tr>}
         </tbody>
         {shown.length > 0 && (
           <tfoot>
             <tr>
-              <td colSpan={5}><strong>Tổng ({shown.length} khách hàng)</strong></td>
+              <td colSpan={6}><strong>Tổng ({shown.length} khách hàng)</strong></td>
               <td className="c-debt" data-label="Tổng công nợ"><div><strong>{vnd(totalDebt)}</strong></div></td>
               <td className="c-act" />
             </tr>
@@ -343,11 +352,12 @@ export default function Page() {
             <div className="field"><label htmlFor="f-addr">Địa chỉ</label><input id="f-addr" value={editing.address || ''} onChange={set('address')} /></div>
             {assignCustomer && (
               <div className="field">
-                <label htmlFor="f-sales">Nhân viên kinh doanh phụ trách</label>
+                <label htmlFor="f-sales">Nhân viên phụ trách</label>
                 <select id="f-sales" value={editing.sales_user_id || ''} onChange={set('sales_user_id')}>
                   <option value="">Chưa giao cho ai</option>
-                  {salesUsers.map((u) => <option key={u.user_id} value={u.user_id}>{u.full_name || u.email}</option>)}
+                  {staffList.map((u) => <option key={u.user_id} value={u.user_id}>{u.name} – {roleLabel[u.role]}</option>)}
                 </select>
+                {!editing.id && <p className="muted small" style={{ margin: 0 }}>Mặc định là người tạo khách hàng.</p>}
               </div>
             )}
             <div className="field"><label htmlFor="f-note">Ghi chú</label><textarea id="f-note" rows={3} value={editing.note || ''} onChange={set('note')} /></div>

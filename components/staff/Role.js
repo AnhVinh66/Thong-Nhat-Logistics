@@ -59,7 +59,6 @@ function abilities(role) {
     addExpense: is('staff', 'sales', 'accountant', 'dispatcher')(role),
     manageAllExpenses: is('staff', 'accountant')(role), // duyệt, thanh toán, sửa / xoá lệnh Chi của mọi người
     editPlan: is('staff', 'dispatcher')(role), // xếp xe, đổi thứ tự chuyến
-    completeOrder: is('staff', 'dispatcher')(role), // đổi trạng thái Hoàn thành / Chưa hoàn thành
     editVehicle: is('staff', 'accountant', 'dispatcher')(role),
   };
 }

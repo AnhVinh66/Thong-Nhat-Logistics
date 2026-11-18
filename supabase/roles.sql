@@ -79,12 +79,14 @@ language sql stable security definer set search_path = public as $$
   select public.is_fin() or exists (select 1 from public.expenses e where e.id = p_expense and e.created_by = auth.uid());
 $$;
 
--- Khách hàng mới do nhân viên kinh doanh tạo thì thuộc về người đó; kinh doanh không tự đổi người phụ trách
+-- Nhân viên phụ trách (sales_user_id) mặc định là NGƯỜI TẠO khách hàng (mọi vai trò); chỉ Admin được đổi / giao lại
 create or replace function public.customers_set_owner() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if public.is_sales() then
-    if tg_op = 'INSERT' then new.sales_user_id := auth.uid(); else new.sales_user_id := old.sales_user_id; end if;
+  if tg_op = 'INSERT' then
+    if not public.is_staff() or new.sales_user_id is null then new.sales_user_id := auth.uid(); end if;
+  elsif not public.is_staff() then
+    new.sales_user_id := old.sales_user_id;
   end if;
   return new;
 end;

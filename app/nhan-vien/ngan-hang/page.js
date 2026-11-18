@@ -6,6 +6,7 @@ import { supabase, commas } from '../../../lib/supabase';
 import { BANKS, fmtTime } from '../../../lib/bank';
 import Modal from '../../../components/staff/Modal';
 import StatementUpload from '../../../components/staff/StatementUpload';
+import AllBankTransactions from '../../../components/staff/AllBankTransactions';
 
 const blank = { bank_name: '', account_number: '', account_name: '', note: '' };
 
@@ -18,6 +19,7 @@ export default function Page() {
   const [formErr, setFormErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [upload, setUpload] = useState(null);
+  const [showAll, setShowAll] = useState(false);
   const [notice, setNotice] = useState(null);
 
   const load = useCallback(async () => {
@@ -78,7 +80,10 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Giao dịch ngân hàng</h1>
-        <button className="btn btn-primary" onClick={() => { setFormErr(''); setEditing({ ...blank }); }}>+ Thêm ngân hàng</button>
+        <div className="dash-actions">
+          <button className="btn btn-outline" onClick={() => setShowAll(true)} disabled={!banks.length}>Tất cả giao dịch</button>
+          <button className="btn btn-primary" onClick={() => { setFormErr(''); setEditing({ ...blank }); }}>+ Thêm ngân hàng</button>
+        </div>
       </div>
       <p className="muted" style={{ marginTop: 0 }}>Chọn một tài khoản để xem giao dịch, hoặc bấm <strong>Tải sao kê</strong> để nhập sao kê mới.</p>
 
@@ -152,6 +157,8 @@ export default function Page() {
           </form>
         </Modal>
       )}
+
+      {showAll && <AllBankTransactions banks={banks} onClose={() => setShowAll(false)} />}
 
       {upload && (
         <StatementUpload

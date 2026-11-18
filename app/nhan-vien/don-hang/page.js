@@ -47,7 +47,7 @@ function Extras({ toll, park }) {
 const sortedStops = (r) => [...(r.order_stops || [])].sort((a, b) => a.position - b.position);
 
 export default function Page() {
-  const { addOrder, editOrder, deleteOrder, completeOrder } = useRole();
+  const { addOrder, editOrder, deleteOrder } = useRole();
   const [fStatus, setFStatus] = useState(''); // '' | incomplete | done
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -76,30 +76,6 @@ export default function Page() {
     });
     setPhotoCounts(m);
   }, []);
-
-  // Đơn đã có đủ chứng từ (biên bản giao nhận hoặc bill) để được Hoàn thành?
-  const hasDocs = (r) => {
-    if (r.order_type === 'multi') {
-      const st = r.order_stops || [];
-      return st.length > 0 && st.every((s) => photoCounts[`${r.id}|${s.id}`] > 0);
-    }
-    return photoCounts[`${r.id}|`] > 0;
-  };
-
-  async function setStatus(r, done) {
-    setNotice(null);
-    if (done && !hasDocs(r)) {
-      setNotice({ ok: false, text: `${orderCode(r.order_no)} chưa thể Hoàn thành: cần có biên bản giao nhận hoặc bill thanh toán${r.order_type === 'multi' ? ' ở mỗi điểm trả' : ''}. Bấm nút Chứng từ để thêm ảnh.` });
-      return;
-    }
-    const { error } = await supabase.rpc('set_order_status', { p_order: r.id, p_done: done });
-    if (error) {
-      setNotice({ ok: false, text: error.message?.includes('set_order_status') ? 'Chưa bật tính năng Trạng thái. Hãy chạy supabase/order-status.sql trên Supabase.' : error.message || 'Không đổi được trạng thái.' });
-      return;
-    }
-    setNotice({ ok: true, text: `${orderCode(r.order_no)}: ${done ? 'Hoàn thành' : 'Chưa hoàn thành'}.` });
-    load();
-  }
 
   const loadPaid = useCallback(async () => {
     const { data, error } = await supabase.from('collection_items').select('order_id, amount, collections(customer_id)');
@@ -487,16 +463,6 @@ export default function Page() {
                           Chứng từ ({photoCounts[`${r.id}|`] || 0})
                         </button>
                       )}
-                      {completeOrder && r.status !== 'done' && (
-                        <button
-                          className={`btn sm ${hasDocs(r) ? 'btn-primary' : 'btn-outline'}`}
-                          onClick={() => setStatus(r, true)}
-                          title={hasDocs(r) ? 'Đánh dấu đơn đã hoàn thành' : 'Cần có biên bản giao nhận hoặc bill trước'}
-                        >✓ Hoàn thành</button>
-                      )}
-                      {completeOrder && r.status === 'done' && (
-                        <button className="btn btn-outline sm" onClick={() => setStatus(r, false)}>↩ Mở lại</button>
-                      )}
                       {editOrder && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
                       {deleteOrder && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                     </td>
@@ -519,6 +485,7 @@ export default function Page() {
                                 Chứng từ ({photoCounts[`${r.id}|${st.id}`] || 0})
                               </button>
                               <span className="stop-code">{stopCode(r.order_no, st.stop_no)}</span>
+                              <span className={`st-pill stop-status ${st.status === 'done' ? 'st-paid' : 'st-pending'}`}>{st.status === 'done' ? 'Hoàn thành' : 'Chưa hoàn thành'}</span>
                               <strong>{st.customers?.name}</strong>
                               <span className="muted"> ({st.customers?.phone})</span> – {st.address}
                               {(st.cargo || st.weight) && <span className="muted"> · {[st.cargo, st.weight].filter(Boolean).join(', ')}</span>}
@@ -553,7 +520,7 @@ export default function Page() {
           stopId={docsFor.stopId}
           title={docsFor.title}
           onClose={() => setDocsFor(null)}
-          onChanged={loadCounts}
+          onChanged={load}
         />
       )}
 

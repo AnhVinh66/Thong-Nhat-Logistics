@@ -851,3 +851,14 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .trip-done { background: #f0fbf4; border-color: #b7e4c7; }
 .trip-done .trip-head { background: #d5f2df; }
 .trip-done .trip-no { background: #166534; }
+
+/* ===== Cửa sổ tất cả giao dịch ngân hàng ===== */
+.bk-all .bk-all-scroll { max-height: 52vh; overflow: auto; }
+.bk-all .bk-table thead th { position: sticky; top: 0; z-index: 1; }
+.bk-table .c-bank { width: 150px; }
+.bk-table .c-bank a { text-decoration: none; color: var(--navy); }
+.bk-table .c-bank a:hover { text-decoration: underline; }
+
+.cus-table .c-owner { width: 150px; }
+
+.stop-status { margin-right: 6px; vertical-align: middle; }
