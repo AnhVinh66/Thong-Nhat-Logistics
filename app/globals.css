@@ -54,13 +54,11 @@ ul { padding: 0; margin: 0; list-style: none; }
 .topbar a { text-decoration: none; }
 .topbar svg { vertical-align: -2px; margin-right: 4px; }
 .topbar-hot { margin-left: auto; color: #ffb27a; font-weight: 700; }
-.nav-in { display: flex; align-items: center; justify-content: space-between; min-height: 70px; gap: 16px; }
-.logo { display: inline-flex; align-items: center; gap: 10px; }
-.logo-text { display: flex; flex-direction: column; line-height: 1.05; }
-.logo-text strong { color: var(--navy); font-size: 1.12rem; font-weight: 800; letter-spacing: .02em; }
-.logo-text small { color: var(--orange-d); font-weight: 700; letter-spacing: .32em; font-size: .72rem; }
-.logo-light .logo-text strong { color: #fff; }
-.logo-light .logo-text small { color: #ffb27a; }
+.nav-in { display: flex; align-items: center; justify-content: space-between; min-height: 78px; gap: 16px; }
+.logo { display: inline-flex; align-items: center; }
+.logo-img { display: block; height: 66px; width: auto; }
+.logo-light { background: #fff; border-radius: 12px; padding: 6px 12px; }
+.logo-light .logo-img { height: 64px; }
 .nav { display: flex; align-items: center; gap: 4px; }
 .nav a { white-space: nowrap; }
 .nav a:not(.btn) { padding: 10px 10px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: .96rem; color: var(--text); }
@@ -827,3 +825,5 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .trip-move button:not(:disabled):hover { border-color: var(--orange); }
 .trip-add { width: 100%; font: inherit; font-size: .78rem; font-weight: 600; padding: 5px; border: 1.5px dashed #b8c4d8; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
 .trip-add:hover { border-color: var(--orange); color: var(--navy); }
+
+.login-card .logo-img { height: 88px; }
