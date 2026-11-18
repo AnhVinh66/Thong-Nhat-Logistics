@@ -13,7 +13,7 @@ export const roleLabel = {
 
 export const roleDesc = {
   staff: 'Toàn quyền, tạo tài khoản và phân quyền',
-  sales: 'Chỉ thấy khách hàng mình phụ trách cùng đơn hàng, phiếu Thu của các khách đó; không xoá khách, không xoá đơn, không sửa / xoá phiếu Thu',
+  sales: 'Chỉ thấy khách hàng mình phụ trách cùng đơn hàng, phiếu Thu của các khách đó; chỉ thêm đơn hàng (không sửa, không xoá); không xoá khách; không sửa / xoá phiếu Thu',
   accountant: 'Xem tất cả; chỉ thêm khách hàng và đơn hàng; xem Thu; toàn quyền Chi tiền, Giao dịch ngân hàng, Danh sách xe',
   dispatcher: 'Xem tất cả; chỉ thêm khách hàng và đơn hàng; xem Thu; Chi tiền chỉ của mình; toàn quyền Danh sách xe',
   driver: 'Chỉ xem chuyến của mình trên điện thoại',
@@ -51,7 +51,7 @@ function abilities(role) {
     deleteCustomer: role === 'staff',
     assignCustomer: role === 'staff', // chọn nhân viên kinh doanh phụ trách
     addOrder: is('staff', 'sales', 'accountant', 'dispatcher')(role),
-    editOrder: is('staff', 'sales')(role),
+    editOrder: role === 'staff',
     deleteOrder: role === 'staff',
     addCollection: is('staff', 'sales')(role),
     editCollection: role === 'staff', // sửa / xoá phiếu Thu

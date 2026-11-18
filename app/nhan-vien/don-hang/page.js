@@ -18,6 +18,19 @@ const blank = {
   oldStopIds: [],
 };
 
+// Đã thu bao nhiêu / còn lại (chỉ hiện khi đơn đã có phiếu Thu)
+function PaidInfo({ fee, paid }) {
+  const p = Number(paid || 0);
+  if (!p) return null;
+  const left = Number(fee || 0) - p;
+  return (
+    <span className="paid-info">
+      <span className="paid-ok">Đã thu {vnd(p)}</span>
+      {left > 0 ? <span className="paid-left">Còn {vnd(left)}</span> : <span className="paid-ok">Đã thu đủ</span>}
+    </span>
+  );
+}
+
 // Phí cầu đường / bến bãi hiển thị dưới cước (chỉ khi có phát sinh)
 function Extras({ toll, park }) {
   const t = Number(toll || 0);
@@ -50,6 +63,7 @@ export default function Page() {
   const [notice, setNotice] = useState(null);
   const [photoCounts, setPhotoCounts] = useState({}); // "orderId|stopId" -> số ảnh
   const [docsFor, setDocsFor] = useState(null); // { orderId, stopId, title }
+  const [paid, setPaid] = useState({ byOrder: {}, byCustomer: {} }); // tiền đã thu theo đơn / theo (đơn|khách)
 
   const loadCounts = useCallback(async () => {
     const { data, error } = await supabase.from('delivery_photos').select('order_id, stop_id');
@@ -62,8 +76,22 @@ export default function Page() {
     setPhotoCounts(m);
   }, []);
 
+  const loadPaid = useCallback(async () => {
+    const { data, error } = await supabase.from('collection_items').select('order_id, amount, collections(customer_id)');
+    if (error) return;
+    const byOrder = {};
+    const byCustomer = {};
+    data.forEach((i) => {
+      byOrder[i.order_id] = (byOrder[i.order_id] || 0) + Number(i.amount);
+      const k = `${i.order_id}|${i.collections?.customer_id}`;
+      byCustomer[k] = (byCustomer[k] || 0) + Number(i.amount);
+    });
+    setPaid({ byOrder, byCustomer });
+  }, []);
+
   const load = useCallback(async () => {
     loadCounts();
+    loadPaid();
     // Tài xế = các tài khoản có vai trò Lái xe (cộng thêm danh sách mặc định trong lib/site.js)
     supabase.from('staff_roles').select('driver_name').eq('role', 'driver').then(({ data, error }) => {
       if (error || !data) return;
@@ -94,7 +122,7 @@ export default function Page() {
       setCustomers(c.data);
     }
     setLoading(false);
-  }, [loadCounts]);
+  }, [loadCounts, loadPaid]);
 
   useEffect(() => {
     load();
@@ -414,6 +442,7 @@ export default function Page() {
                     <td className="num">
                       {vnd(r.fee)}
                       <Extras toll={r.toll_fee} park={r.parking_fee} />
+                      <PaidInfo fee={r.fee} paid={paid.byOrder[r.id]} />
                     </td>
                     <td className="actions">
                       {!isMulti && (
@@ -449,7 +478,7 @@ export default function Page() {
                               <strong>{st.customers?.name}</strong>
                               <span className="muted"> ({st.customers?.phone})</span> – {st.address}
                               {(st.cargo || st.weight) && <span className="muted"> · {[st.cargo, st.weight].filter(Boolean).join(', ')}</span>}
-                              <span className="stop-fee">{vnd(st.fee)}<Extras toll={st.toll_fee} park={st.parking_fee} /></span>
+                              <span className="stop-fee">{vnd(st.fee)}<Extras toll={st.toll_fee} park={st.parking_fee} />{stops.filter((x) => x.customer_id === st.customer_id).length === 1 && <PaidInfo fee={st.fee} paid={paid.byCustomer[`${r.id}|${st.customer_id}`]} />}</span>
                             </li>
                           ))}
                         </ol>

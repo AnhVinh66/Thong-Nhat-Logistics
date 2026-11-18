@@ -1452,20 +1452,15 @@ create policy "rbac insert" on public.orders for insert to authenticated
     public.is_staff() or public.my_role() in ('accountant', 'dispatcher')
     or (public.is_sales() and (customer_id is null or public.sales_owns_customer(customer_id)))
   );
-create policy "rbac update" on public.orders for update to authenticated
-  using (public.is_staff() or (public.is_sales() and (created_by = auth.uid() or public.sales_sees_order(id))))
-  with check (public.is_staff() or (public.is_sales() and (customer_id is null or public.sales_owns_customer(customer_id))));
+create policy "rbac update" on public.orders for update to authenticated using (public.is_staff()) with check (public.is_staff());
 create policy "rbac delete" on public.orders for delete to authenticated using (public.is_staff());
 
 create policy "rbac select" on public.order_stops for select to authenticated
   using (public.sees_all() or (public.is_sales() and (public.sales_owns_customer(customer_id) or public.sales_sees_order(order_id))));
 create policy "rbac insert" on public.order_stops for insert to authenticated
   with check (public.is_staff() or public.my_role() in ('accountant', 'dispatcher') or (public.is_sales() and public.sales_owns_customer(customer_id)));
-create policy "rbac update" on public.order_stops for update to authenticated
-  using (public.is_staff() or (public.is_sales() and public.sales_owns_customer(customer_id)))
-  with check (public.is_staff() or (public.is_sales() and public.sales_owns_customer(customer_id)));
-create policy "rbac delete" on public.order_stops for delete to authenticated
-  using (public.is_staff() or (public.is_sales() and public.sales_owns_customer(customer_id)));
+create policy "rbac update" on public.order_stops for update to authenticated using (public.is_staff()) with check (public.is_staff());
+create policy "rbac delete" on public.order_stops for delete to authenticated using (public.is_staff());
 
 -- Ảnh chứng từ giao hàng: ai thấy đơn thì xem / tải / xoá được ảnh của đơn đó
 create policy "rbac all" on public.delivery_photos for all to authenticated
