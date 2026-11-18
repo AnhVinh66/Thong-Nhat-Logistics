@@ -9,7 +9,7 @@
 create table if not exists public.staff_roles (
   user_id uuid primary key references auth.users (id) on delete cascade,
   email text,
-  role text not null check (role in ('staff', 'dispatcher', 'accountant', 'driver')),
+  role text not null check (role in ('staff', 'sales', 'accountant', 'dispatcher', 'driver')),
   driver_name text,
   created_at timestamptz not null default now(),
   check (role <> 'driver' or coalesce(trim(driver_name), '') <> '')
@@ -66,7 +66,7 @@ begin
   if not public.is_staff() then
     raise exception 'Bạn không có quyền phân quyền tài khoản.';
   end if;
-  if p_role not in ('staff', 'dispatcher', 'accountant', 'driver', 'none') then
+  if p_role not in ('staff', 'sales', 'accountant', 'dispatcher', 'driver', 'none') then
     raise exception 'Vai trò không hợp lệ.';
   end if;
   select id into uid from auth.users where lower(email) = lower(trim(p_email));

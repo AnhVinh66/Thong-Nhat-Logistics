@@ -8,6 +8,7 @@ import { fmtTime } from '../../../lib/bank';
 import Modal from '../../../components/staff/Modal';
 import DateInput from '../../../components/DateInput';
 import ExpenseForm from '../../../components/staff/ExpenseForm';
+import { useRole } from '../../../components/staff/Role';
 import { compress } from '../../../components/staff/DeliveryDocs';
 
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
@@ -52,6 +53,8 @@ function StatusPill({ status }) {
 }
 
 function Detail({ row, recon, onClose, onChanged, onEdit, onStatus }) {
+  const { manageAllExpenses, userId } = useRole();
+  const mine = manageAllExpenses || row.created_by === userId;
   const [photos, setPhotos] = useState([]);
   const [urls, setUrls] = useState({});
   const [busy, setBusy] = useState(false);
@@ -161,17 +164,18 @@ function Detail({ row, recon, onClose, onChanged, onEdit, onStatus }) {
       ) : <p className="muted small">Chưa có ảnh.</p>}
 
       <div className="modal-actions" style={{ marginTop: 16, flexWrap: 'wrap' }}>
-        {s !== 'pending' && <button className="btn btn-outline" style={{ marginRight: 'auto' }} onClick={() => onStatus(row, s === 'paid' ? 'approved' : 'pending')}>↩ Hoàn về {s === 'paid' ? 'Đã duyệt' : 'Chờ duyệt'}</button>}
+        {manageAllExpenses && s !== 'pending' && <button className="btn btn-outline" style={{ marginRight: 'auto' }} onClick={() => onStatus(row, s === 'paid' ? 'approved' : 'pending')}>↩ Hoàn về {s === 'paid' ? 'Đã duyệt' : 'Chờ duyệt'}</button>}
         <button className="btn btn-outline" onClick={onClose}>Đóng</button>
-        {s === 'pending' && <button className="btn btn-outline" onClick={() => onEdit(row)}>Sửa phiếu</button>}
-        {s === 'pending' && <button className="btn btn-primary" onClick={() => onStatus(row, 'approved')}>Duyệt</button>}
-        {s === 'approved' && <button className="btn btn-primary" onClick={() => onStatus(row, 'paid')}>Đánh dấu Đã thanh toán</button>}
+        {mine && s === 'pending' && <button className="btn btn-outline" onClick={() => onEdit(row)}>Sửa phiếu</button>}
+        {manageAllExpenses && s === 'pending' && <button className="btn btn-primary" onClick={() => onStatus(row, 'approved')}>Duyệt</button>}
+        {manageAllExpenses && s === 'approved' && <button className="btn btn-primary" onClick={() => onStatus(row, 'paid')}>Đánh dấu Đã thanh toán</button>}
       </div>
     </Modal>
   );
 }
 
 export default function Page() {
+  const { manageAllExpenses, userId } = useRole();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -356,10 +360,10 @@ export default function Page() {
                 <td className="x-act">
                   <div className="actions">
                     <button className="btn btn-outline sm" onClick={() => setOpen(r)}>Xem</button>
-                    {r.status === 'pending' && <button className="btn btn-primary sm" onClick={() => changeStatus(r, 'approved')}>Duyệt</button>}
-                    {r.status === 'approved' && <button className="btn btn-primary sm" onClick={() => changeStatus(r, 'paid')}>Đã TT</button>}
-                    {r.status === 'pending' && <button className="btn btn-outline sm" onClick={() => { setNotice(null); setForm({ edit: r }); }}>Sửa</button>}
-                    {r.status === 'pending' && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
+                    {manageAllExpenses && r.status === 'pending' && <button className="btn btn-primary sm" onClick={() => changeStatus(r, 'approved')}>Duyệt</button>}
+                    {manageAllExpenses && r.status === 'approved' && <button className="btn btn-primary sm" onClick={() => changeStatus(r, 'paid')}>Đã TT</button>}
+                    {(manageAllExpenses || r.created_by === userId) && r.status === 'pending' && <button className="btn btn-outline sm" onClick={() => { setNotice(null); setForm({ edit: r }); }}>Sửa</button>}
+                    {(manageAllExpenses || r.created_by === userId) && r.status === 'pending' && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                   </div>
                 </td>
               </tr>

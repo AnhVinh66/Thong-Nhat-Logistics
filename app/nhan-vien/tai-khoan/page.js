@@ -5,7 +5,7 @@ import { supabase, displayLogin, fmtDateTime } from '../../../lib/supabase';
 import Modal from '../../../components/staff/Modal';
 import { roleLabel, roleDesc } from '../../../components/staff/Role';
 
-const ROLE_OPTIONS = ['dispatcher', 'accountant', 'staff', 'driver'];
+const ROLE_OPTIONS = ['sales', 'accountant', 'dispatcher', 'driver', 'staff'];
 const blank = { name: '', username: '', password: '', role: 'driver' };
 
 // Gợi ý tên đăng nhập từ họ tên: "Nguyễn Thế Trang" -> "trang"

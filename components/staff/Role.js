@@ -2,35 +2,33 @@
 
 import { createContext, useContext } from 'react';
 
-// Vai trò văn phòng: staff = Quản trị (toàn quyền), dispatcher = Điều phối / Kinh doanh, accountant = Kế toán
+// Vai trò: staff = Admin, sales = Nhân viên kinh doanh, accountant = Kế toán, dispatcher = Điều phối xe, driver = Lái xe
 export const roleLabel = {
-  staff: 'Quản trị',
-  dispatcher: 'Điều phối / Kinh doanh',
+  staff: 'Admin',
+  sales: 'Nhân viên kinh doanh',
   accountant: 'Kế toán',
+  dispatcher: 'Điều phối xe',
   driver: 'Lái xe',
 };
 
 export const roleDesc = {
   staff: 'Toàn quyền, tạo tài khoản và phân quyền',
-  dispatcher: 'Khách hàng, Đơn hàng, Danh sách xe; xem công nợ',
-  accountant: 'Thu tiền, Chi tiền, Ngân hàng; chỉ xem Khách hàng, Đơn hàng, Xe',
+  sales: 'Chỉ thấy khách hàng mình phụ trách cùng đơn hàng, phiếu Thu của các khách đó; không xoá khách, không xoá đơn, không sửa / xoá phiếu Thu',
+  accountant: 'Xem tất cả; chỉ thêm khách hàng và đơn hàng; xem Thu; toàn quyền Chi tiền, Giao dịch ngân hàng, Danh sách xe',
+  dispatcher: 'Xem tất cả; chỉ thêm khách hàng và đơn hàng; xem Thu; Chi tiền chỉ của mình; toàn quyền Danh sách xe',
   driver: 'Chỉ xem chuyến của mình trên điện thoại',
 };
 
-// Trang nào xem được, và ai được sửa dữ liệu
+// Trang nào xem được (theo bảng phân quyền)
 const VIEW = {
-  '/nhan-vien': ['staff', 'dispatcher', 'accountant'],
-  '/nhan-vien/don-hang': ['staff', 'dispatcher', 'accountant'],
-  '/nhan-vien/khach-hang': ['staff', 'dispatcher', 'accountant'],
-  '/nhan-vien/xe': ['staff', 'dispatcher', 'accountant'],
-  '/nhan-vien/thu-tien': ['staff', 'accountant'],
-  '/nhan-vien/chi-tien': ['staff', 'accountant'],
+  '/nhan-vien': ['staff', 'sales', 'accountant', 'dispatcher'],
+  '/nhan-vien/don-hang': ['staff', 'sales', 'accountant', 'dispatcher'],
+  '/nhan-vien/khach-hang': ['staff', 'sales', 'accountant', 'dispatcher'],
+  '/nhan-vien/thu-tien': ['staff', 'sales', 'accountant', 'dispatcher'],
+  '/nhan-vien/chi-tien': ['staff', 'sales', 'accountant', 'dispatcher'],
   '/nhan-vien/ngan-hang': ['staff', 'accountant'],
+  '/nhan-vien/xe': ['staff', 'accountant', 'dispatcher'],
   '/nhan-vien/tai-khoan': ['staff'],
-};
-const EDIT = {
-  ops: ['staff', 'dispatcher'], // Khách hàng, Đơn hàng, Xe
-  fin: ['staff', 'accountant'], // Thu, Chi, Ngân hàng
 };
 
 export function canView(role, pathname) {
@@ -41,11 +39,32 @@ export function canView(role, pathname) {
   return key ? VIEW[key].includes(role) : role === 'staff';
 }
 
-const Ctx = createContext({ role: 'staff', canEditOps: true, canEditFin: true });
+const is = (...roles) => (role) => roles.includes(role);
 
-export function RoleProvider({ role, children }) {
-  const value = { role, canEditOps: EDIT.ops.includes(role), canEditFin: EDIT.fin.includes(role) };
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+// Thao tác được phép (cơ sở dữ liệu cũng chặn theo đúng các quy tắc này)
+function abilities(role) {
+  return {
+    role,
+    isSales: role === 'sales',
+    addCustomer: is('staff', 'sales', 'accountant', 'dispatcher')(role),
+    editCustomer: is('staff', 'sales')(role), // kinh doanh chỉ sửa khách của mình (cơ sở dữ liệu lọc sẵn)
+    deleteCustomer: role === 'staff',
+    assignCustomer: role === 'staff', // chọn nhân viên kinh doanh phụ trách
+    addOrder: is('staff', 'sales', 'accountant', 'dispatcher')(role),
+    editOrder: is('staff', 'sales')(role),
+    deleteOrder: role === 'staff',
+    addCollection: is('staff', 'sales')(role),
+    editCollection: role === 'staff', // sửa / xoá phiếu Thu
+    addExpense: is('staff', 'sales', 'accountant', 'dispatcher')(role),
+    manageAllExpenses: is('staff', 'accountant')(role), // duyệt, thanh toán, sửa / xoá lệnh Chi của mọi người
+    editVehicle: is('staff', 'accountant', 'dispatcher')(role),
+  };
+}
+
+const Ctx = createContext({ ...abilities('staff'), userId: null });
+
+export function RoleProvider({ role, userId, children }) {
+  return <Ctx.Provider value={{ ...abilities(role), userId }}>{children}</Ctx.Provider>;
 }
 
 export const useRole = () => useContext(Ctx);

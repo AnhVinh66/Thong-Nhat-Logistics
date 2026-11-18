@@ -34,7 +34,7 @@ function Extras({ toll, park }) {
 const sortedStops = (r) => [...(r.order_stops || [])].sort((a, b) => a.position - b.position);
 
 export default function Page() {
-  const { canEditOps } = useRole();
+  const { addOrder, editOrder, deleteOrder } = useRole();
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -367,7 +367,7 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Đơn hàng</h1>
-        {canEditOps && <button
+        {addOrder && <button
           className="btn btn-primary"
           onClick={() => openEdit(null)}
           disabled={!customers.length}
@@ -424,8 +424,8 @@ export default function Page() {
                           Chứng từ ({photoCounts[`${r.id}|`] || 0})
                         </button>
                       )}
-                      {canEditOps && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
-                      {canEditOps && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
+                      {editOrder && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
+                      {deleteOrder && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                     </td>
                   </tr>
                   {isMulti && (
@@ -481,7 +481,6 @@ export default function Page() {
           title={docsFor.title}
           onClose={() => setDocsFor(null)}
           onChanged={loadCounts}
-          readOnly={!canEditOps}
         />
       )}
 

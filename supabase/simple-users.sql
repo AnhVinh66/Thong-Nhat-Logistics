@@ -51,7 +51,7 @@ begin
   if length(coalesce(p_password, '')) < 6 then
     raise exception 'Mật khẩu cần ít nhất 6 ký tự.';
   end if;
-  if p_role not in ('staff', 'dispatcher', 'accountant', 'driver') then
+  if p_role not in ('staff', 'sales', 'accountant', 'dispatcher', 'driver') then
     raise exception 'Vai trò không hợp lệ.';
   end if;
   if p_role = 'driver' and exists (select 1 from public.staff_roles where role = 'driver' and lower(driver_name) = lower(v_name)) then
@@ -120,7 +120,7 @@ begin
   if p_user_id = auth.uid() and p_role <> 'staff' then
     raise exception 'Không thể tự đổi hoặc thu hồi quyền của chính mình.';
   end if;
-  if p_role not in ('staff', 'dispatcher', 'accountant', 'driver', 'none') then
+  if p_role not in ('staff', 'sales', 'accountant', 'dispatcher', 'driver', 'none') then
     raise exception 'Vai trò không hợp lệ.';
   end if;
   select email into v_email from auth.users where id = p_user_id;

@@ -64,7 +64,7 @@ Nếu chưa có khoá, khách vẫn dùng được bằng cách nhập số km t
 3l. **Mã đơn con cho điểm trả** (DH0004-1, DH0004-2...): chạy `supabase/stop-codes.sql` SAU `multi-stop.sql` (đã có trong `schema.sql` bản hiện tại). Số hiệu do database cấp, cố định và không bao giờ dùng lại.
 3m. **Thống kê theo xe** (số đơn, doanh thu, chi phí nhiên liệu / bảo dưỡng theo ngày, tuần, tháng, năm ở trang Danh sách xe): chạy `supabase/vehicle-stats.sql` SAU `expenses.sql` (đã có trong `schema.sql` bản hiện tại).
 3n. **Phí cầu đường và phí bến bãi** tại điểm trả hàng (Đơn hàng): chạy `supabase/order-fees.sql` SAU `multi-stop.sql` (đã có trong `schema.sql` bản hiện tại). Hai khoản phí được ghi nhận riêng, không cộng vào cước phí.
-3o. **Phân quyền theo vai trò** (Quản trị, Điều phối / Kinh doanh, Kế toán, Lái xe): chạy `supabase/simple-users.sql` rồi `supabase/roles.sql` — luôn chạy `roles.sql` CUỐI CÙNG (đã có ở cuối `schema.sql` bản hiện tại). Tài khoản cũ loại "Văn phòng" tự thành **Quản trị**. Chọn vai trò ở trang Tài khoản.
+3o. **Phân quyền theo 5 vai trò** (Admin, Nhân viên kinh doanh, Kế toán, Điều phối xe, Lái xe — theo bảng phân quyền của công ty): chạy `supabase/simple-users.sql` rồi `supabase/roles.sql` — luôn chạy `roles.sql` CUỐI CÙNG (đã có ở cuối `schema.sql` bản hiện tại). Tài khoản cũ loại "Văn phòng" tự thành **Admin**. Chọn vai trò ở trang Tài khoản; Admin giao khách hàng cho nhân viên kinh doanh ở form Sửa khách hàng.
 4. **Authentication → Users → Add user** để tạo tài khoản cho từng nhân viên (email + mật khẩu). Mọi nhân viên có quyền như nhau.
 5. **Project Settings → API**: copy *Project URL* và *anon public key* vào `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` khi chạy thử, GitHub *Variables* khi deploy).
 

@@ -9,6 +9,7 @@ import Modal from '../../../components/staff/Modal';
 import DateInput from '../../../components/DateInput';
 import { compress } from '../../../components/staff/DeliveryDocs';
 import CollectionForm from '../../../components/staff/CollectionForm';
+import { useRole } from '../../../components/staff/Role';
 
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
 const stamp = fmtDateTime;
@@ -58,6 +59,7 @@ const itemCode = (i, customerId) => {
 };
 
 function Detail({ row, recon, onClose, onChanged, onEdit }) {
+  const { editCollection: canEdit, addCollection: canAdd } = useRole();
   const [photos, setPhotos] = useState([]);
   const [urls, setUrls] = useState({});
   const [busy, setBusy] = useState(false);
@@ -151,8 +153,10 @@ function Detail({ row, recon, onClose, onChanged, onEdit }) {
 
       <div className="doc-head" style={{ marginTop: 18 }}>
         <h3 style={{ margin: 0 }}>Ảnh bill ({photos.length})</h3>
-        <label className="btn btn-outline sm" htmlFor="d-add" style={{ cursor: 'pointer' }}>{busy ? 'Đang tải...' : '+ Gắn thêm ảnh'}</label>
+        {canAdd && (<>
+<label className="btn btn-outline sm" htmlFor="d-add" style={{ cursor: 'pointer' }}>{busy ? 'Đang tải...' : '+ Gắn thêm ảnh'}</label>
         <input id="d-add" type="file" accept="image/*" multiple hidden disabled={busy} onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
+</>)}
       </div>
       {msg && <p className={msg.ok ? 'ok-msg' : 'err'} role="status">{msg.text}</p>}
       {photos.length ? (
@@ -165,20 +169,21 @@ function Detail({ row, recon, onClose, onChanged, onEdit }) {
                   <img src={urls[p.path]} alt="Ảnh bill thu tiền" loading="lazy" />
                 </a>
               ) : <div className="thumb-ph">Đang tải...</div>}
-              <button type="button" className="thumb-del" onClick={() => removePhoto(p)} aria-label="Xoá ảnh này">✕</button>
+              <button type="button" className="thumb-del" onClick={() => removePhoto(p)} aria-label="Xoá ảnh này" hidden={!canEdit}>✕</button>
             </li>
           ))}
         </ul>
       ) : <p className="muted small">Chưa có ảnh bill.</p>}
       <div className="modal-actions" style={{ marginTop: 16 }}>
         <button className="btn btn-outline" onClick={onClose}>Đóng</button>
-        <button className="btn btn-primary" onClick={() => onEdit(row)}>Sửa phiếu</button>
+        {canEdit && <button className="btn btn-primary" onClick={() => onEdit(row)}>Sửa phiếu</button>}
       </div>
     </Modal>
   );
 }
 
 export default function Page() {
+  const { addCollection, editCollection } = useRole();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -261,7 +266,7 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Thu tiền</h1>
-        <button className="btn btn-primary btn-lg" onClick={() => { setNotice(null); setCreating(true); }}>+ Đề xuất Thu</button>
+        {addCollection && <button className="btn btn-primary btn-lg" onClick={() => { setNotice(null); setCreating(true); }}>+ Đề xuất Thu</button>}
       </div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
@@ -335,8 +340,8 @@ export default function Page() {
               <td className="c-act c-act3">
                 <div className="actions">
                   <button className="btn btn-outline sm" onClick={() => setOpen(r)}>Xem</button>
-                  <button className="btn btn-outline sm" onClick={() => { setNotice(null); setEditRow(r); }}>Sửa</button>
-                  <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>
+                  {editCollection && <button className="btn btn-outline sm" onClick={() => { setNotice(null); setEditRow(r); }}>Sửa</button>}
+                  {editCollection && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                 </div>
               </td>
             </tr>

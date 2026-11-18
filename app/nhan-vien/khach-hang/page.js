@@ -112,7 +112,8 @@ function CustomerDetail({ d }) {
 }
 
 export default function Page() {
-  const { canEditOps } = useRole();
+  const { addCustomer, editCustomer, deleteCustomer, assignCustomer } = useRole();
+  const [salesUsers, setSalesUsers] = useState([]);
   const [rows, setRows] = useState([]);
   const [debts, setDebts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -124,6 +125,11 @@ export default function Page() {
   const [editing, setEditing] = useState(null);
   const [formErr, setFormErr] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!assignCustomer) return;
+    supabase.from('staff_roles').select('user_id, full_name, email').eq('role', 'sales').then(({ data }) => setSalesUsers(data || []));
+  }, [assignCustomer]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -171,6 +177,8 @@ export default function Page() {
     }
     setBusy(true);
     const { id, created_at, customer_no, ...fields } = editing;
+    if (!assignCustomer) delete fields.sales_user_id; // chỉ Admin được đổi người phụ trách
+    else if (!fields.sales_user_id) fields.sales_user_id = null;
     const clean = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]));
     const { error } = id
       ? await supabase.from('customers').update(clean).eq('id', id)
@@ -209,7 +217,7 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Khách hàng</h1>
-        {canEditOps && <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm khách hàng</button>}
+        {addCustomer && <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm khách hàng</button>}
       </div>
 
       <div className="toolbar">
@@ -285,8 +293,8 @@ export default function Page() {
                 <td className="c-act c-act3">
                   <div className="actions">
                     <a className="btn btn-primary sm" href={`/nhan-vien/khach-hang/chi-tiet/?id=${r.id}`}>Chi tiết</a>
-                    {canEditOps && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
-                    {canEditOps && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
+                    {editCustomer && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
+                    {deleteCustomer && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                   </div>
                 </td>
               </tr>
@@ -333,6 +341,15 @@ export default function Page() {
               <div className="field"><label htmlFor="f-tax">Mã số thuế</label><input id="f-tax" value={editing.tax_code || ''} onChange={set('tax_code')} /></div>
             </div>
             <div className="field"><label htmlFor="f-addr">Địa chỉ</label><input id="f-addr" value={editing.address || ''} onChange={set('address')} /></div>
+            {assignCustomer && (
+              <div className="field">
+                <label htmlFor="f-sales">Nhân viên kinh doanh phụ trách</label>
+                <select id="f-sales" value={editing.sales_user_id || ''} onChange={set('sales_user_id')}>
+                  <option value="">Chưa giao cho ai</option>
+                  {salesUsers.map((u) => <option key={u.user_id} value={u.user_id}>{u.full_name || u.email}</option>)}
+                </select>
+              </div>
+            )}
             <div className="field"><label htmlFor="f-note">Ghi chú</label><textarea id="f-note" rows={3} value={editing.note || ''} onChange={set('note')} /></div>
             {formErr && <p className="err" role="alert">{formErr}</p>}
             <div className="modal-actions">

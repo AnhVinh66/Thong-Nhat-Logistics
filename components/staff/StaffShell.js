@@ -121,7 +121,7 @@ export default function StaffShell({ children }) {
 
   const r = role.role;
   return (
-    <RoleProvider role={r}>
+    <RoleProvider role={r} userId={userId}>
       <AdminLayout role={r} pathname={pathname} login={displayLogin(session.user.email)} onLogout={() => supabase.auth.signOut()}>
         {canView(r, pathname) ? children : (
           <div className="card">
