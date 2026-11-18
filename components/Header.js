@@ -46,6 +46,9 @@ export default function Header() {
               {n.label}
             </Link>
           ))}
+          <Link href="/nhan-vien/" className="nav-cms" onClick={() => setOpen(false)}>
+            <Icon name="key" size={18} /> Thống Nhất CMS – Đăng nhập
+          </Link>
           <Link href="/bao-gia/" className="btn btn-primary nav-cta" onClick={() => setOpen(false)}>
             Yêu cầu báo giá
           </Link>

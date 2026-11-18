@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, customerTypes, vnd, customerCode, fmtDate, orderCode, stopCode, displayLogin } from '../../../lib/supabase';
 import { useRole, roleLabel } from '../../../components/staff/Role';
 import Modal from '../../../components/staff/Modal';
+import { exportCustomersExcel } from '../../../lib/exportCustomers';
 
 const blank = { name: '', phone: '', email: '', address: '', company: '', tax_code: '', type: 'le', note: '' };
 const dmy = fmtDate;
@@ -120,6 +121,9 @@ export default function Page() {
   const [err, setErr] = useState('');
   const [q, setQ] = useState('');
   const [type, setType] = useState('');
+  const [owner, setOwner] = useState(''); // '' = mọi nhân viên, 'none' = chưa giao, còn lại = user_id
+  const [exporting, setExporting] = useState(false);
+  const [exportMsg, setExportMsg] = useState(null);
   const [sort, setSort] = useState('debt'); // debt | new | name
   const [open, setOpen] = useState({}); // khách nào đang mở bảng chi tiết
   const [editing, setEditing] = useState(null);
@@ -157,6 +161,7 @@ export default function Page() {
     const list = rows.filter(
       (r) =>
         (!type || r.type === type) &&
+        (!owner || (owner === 'none' ? !r.sales_user_id : r.sales_user_id === owner)) &&
         (!s || [r.name, r.phone, r.email, r.company, r.tax_code, r.address, customerCode(r.customer_no)].some((v) => (v || '').toLowerCase().includes(s)))
     );
     const debtOf = (r) => debts[r.id]?.debt || 0;
@@ -165,7 +170,7 @@ export default function Page() {
       if (sort === 'new') return (b.created_at || '').localeCompare(a.created_at || '');
       return debtOf(b) - debtOf(a) || a.name.localeCompare(b.name, 'vi');
     });
-  }, [rows, q, type, sort, debts]);
+  }, [rows, q, type, sort, debts, owner]);
 
   const totalDebt = useMemo(() => shown.reduce((a, r) => a + (debts[r.id]?.debt || 0), 0), [shown, debts]);
 
@@ -207,6 +212,24 @@ export default function Page() {
     load();
   }
 
+  async function exportExcel() {
+    setExportMsg(null);
+    setExporting(true);
+    try {
+      const label = owner === 'none' ? 'chua-giao' : owner ? staffById[owner]?.name || 'nhan-vien' : 'tat-ca';
+      const name = await exportCustomersExcel({
+        rows: shown,
+        debts,
+        staffOf: (r) => (r.sales_user_id && staffById[r.sales_user_id] ? { name: staffById[r.sales_user_id].name, role: roleLabel[staffById[r.sales_user_id].role] } : null),
+        filterLabel: label,
+      });
+      setExportMsg({ ok: true, text: `Đã xuất ${shown.length} khách hàng ra file ${name}.` });
+    } catch {
+      setExportMsg({ ok: false, text: 'Không xuất được file Excel. Vui lòng thử lại.' });
+    }
+    setExporting(false);
+  }
+
   const set = (k) => (e) => setEditing((s) => ({ ...s, [k]: e.target.value }));
   const openEdit = (r) => {
     setFormErr('');
@@ -218,11 +241,23 @@ export default function Page() {
     <>
       <div className="staff-head">
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Khách hàng</h1>
-        {addCustomer && <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm khách hàng</button>}
+        <div className="dash-actions">
+          <button className="btn btn-outline" onClick={exportExcel} disabled={exporting || !shown.length} title="Xuất danh sách khách hàng đang hiển thị (theo bộ lọc) kèm công nợ">
+            {exporting ? 'Đang xuất...' : 'Xuất Excel'}
+          </button>
+          {addCustomer && <button className="btn btn-primary" onClick={() => openEdit(null)}>+ Thêm khách hàng</button>}
+        </div>
       </div>
 
       <div className="toolbar">
         <input aria-label="Tìm kiếm" placeholder="Tìm theo mã KH, tên, SĐT, công ty, MST..." value={q} onChange={(e) => setQ(e.target.value)} />
+        <select aria-label="Lọc theo nhân viên phụ trách" value={owner} onChange={(e) => setOwner(e.target.value)}>
+          <option value="">Mọi nhân viên phụ trách</option>
+          {[...staffList].sort((a, b) => (a.role === 'sales' ? 0 : 1) - (b.role === 'sales' ? 0 : 1) || a.name.localeCompare(b.name, 'vi')).map((u) => (
+            <option key={u.user_id} value={u.user_id}>{u.name} – {roleLabel[u.role]}</option>
+          ))}
+          <option value="none">Chưa giao cho ai</option>
+        </select>
         <select aria-label="Lọc theo loại khách" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">Tất cả loại khách</option>
           {Object.entries(customerTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -235,6 +270,7 @@ export default function Page() {
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
+      {exportMsg && <p className={exportMsg.ok ? 'ok-msg' : 'err'} role="status">{exportMsg.text}</p>}
 
       <table className="cus-table">
         <thead>

@@ -199,9 +199,10 @@ input[aria-invalid="true"] { border-color: var(--err); }
   .nav.open { display: flex; }
   .nav a:not(.btn) { padding: 14px 12px; min-height: 44px; }
   .nav-cta { margin: 8px 0 0; }
-  .topbar a:not(.topbar-hot), .topbar span { display: none; }
-  .topbar-in { justify-content: center; }
+  .topbar a:not(.topbar-hot):not(.topbar-cms), .topbar > .container > span { display: none; }
+  .topbar-in { justify-content: center; gap: 14px; }
   .topbar-hot { margin: 0; }
+  .nav .nav-cms { display: flex; }
 }
 @media (max-width: 600px) {
   .section { padding: 56px 0; }
@@ -959,3 +960,7 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .bank-actions { flex-wrap: nowrap; }
 .bank-actions .btn { padding-left: 12px; padding-right: 12px; white-space: nowrap; }
 .bank-grid { grid-template-columns: repeat(auto-fill, minmax(390px, 1fr)); }
+
+/* Lối vào Thống Nhất CMS trong menu điện thoại / máy tính bảng (trên máy tính đã có ở thanh trên cùng) */
+.nav .nav-cms { display: none; align-items: center; gap: 8px; font-weight: 700; color: var(--navy); }
+@media (max-width: 1080px) { .nav .nav-cms { display: flex; } }
