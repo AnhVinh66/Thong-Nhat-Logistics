@@ -467,35 +467,36 @@ export default function Page() {
                       {deleteOrder && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
                     </td>
                   </tr>
-                  {isMulti && (
-                    <tr className="stops-row">
+                  {isMulti && stops.map((st, si) => (
+                    <tr key={st.id} className={`stop-row ${si === stops.length - 1 ? 'stop-row-last' : ''}`}>
+                      <td><span className="stop-code">{stopCode(r.order_no, st.stop_no)}</span></td>
+                      <td>{st.customers?.name}<div className="muted small">{st.customers?.phone}</div></td>
+                      <td><span className="muted">→</span> {st.address}</td>
+                      <td>{st.cargo}{st.weight && <div className="muted small">{st.weight}</div>}</td>
                       <td></td>
-                      <td colSpan={8}>
-                        <ol className="stop-list coded">
-                          {stops.map((st) => (
-                            <li key={st.id}>
-                              <button
-                                className={`btn sm stop-docs ${photoCounts[`${r.id}|${st.id}`] ? 'btn-docs-has' : 'btn-docs'}`}
-                                onClick={() => setDocsFor({
-                                  orderId: r.id,
-                                  stopId: st.id,
-                                  title: `Chứng từ – ${stopCode(r.order_no, st.stop_no)} (${st.customers?.name || ''})`,
-                                })}
-                              >
-                                Chứng từ ({photoCounts[`${r.id}|${st.id}`] || 0})
-                              </button>
-                              <span className="stop-code">{stopCode(r.order_no, st.stop_no)}</span>
-                              <span className={`st-pill stop-status ${st.status === 'done' ? 'st-paid' : 'st-pending'}`}>{st.status === 'done' ? 'Hoàn thành' : 'Chưa hoàn thành'}</span>
-                              <strong>{st.customers?.name}</strong>
-                              <span className="muted"> ({st.customers?.phone})</span> – {st.address}
-                              {(st.cargo || st.weight) && <span className="muted"> · {[st.cargo, st.weight].filter(Boolean).join(', ')}</span>}
-                              <span className="stop-fee">{vnd(st.fee)}<Extras toll={st.toll_fee} park={st.parking_fee} />{stops.filter((x) => x.customer_id === st.customer_id).length === 1 && <PaidInfo fee={st.fee} paid={paid.byCustomer[`${r.id}|${st.customer_id}`]} />}</span>
-                            </li>
-                          ))}
-                        </ol>
+                      <td></td>
+                      <td className="o-status">
+                        <span className={`st-pill ${st.status === 'done' ? 'st-paid' : 'st-pending'}`}>{st.status === 'done' ? 'Hoàn thành' : 'Chưa hoàn thành'}</span>
+                      </td>
+                      <td className="num">
+                        {vnd(st.fee)}
+                        <Extras toll={st.toll_fee} park={st.parking_fee} />
+                        {stops.filter((x) => x.customer_id === st.customer_id).length === 1 && <PaidInfo fee={st.fee} paid={paid.byCustomer[`${r.id}|${st.customer_id}`]} />}
+                      </td>
+                      <td className="actions">
+                        <button
+                          className={`btn sm ${photoCounts[`${r.id}|${st.id}`] ? 'btn-docs-has' : 'btn-docs'}`}
+                          onClick={() => setDocsFor({
+                            orderId: r.id,
+                            stopId: st.id,
+                            title: `Chứng từ – ${stopCode(r.order_no, st.stop_no)} (${st.customers?.name || ''})`,
+                          })}
+                        >
+                          Chứng từ ({photoCounts[`${r.id}|${st.id}`] || 0})
+                        </button>
                       </td>
                     </tr>
-                  )}
+                  ))}
                 </Fragment>
               );
             })}

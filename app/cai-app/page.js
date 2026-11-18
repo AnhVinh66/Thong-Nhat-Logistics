@@ -43,7 +43,7 @@ export default function Page() {
       <section className="section">
         <div className="container">
           <div className="install-intro card">
-            <img src="/icons/icon-192.png" alt="Biểu tượng app Thống Nhất" width="72" height="72" />
+            <img src="/icons/tn-icon-192.png" alt="Biểu tượng app Thống Nhất" width="72" height="72" />
             <div>
               <p style={{ margin: 0 }}>Địa chỉ trang đăng nhập:</p>
               <p style={{ margin: '2px 0 10px', fontWeight: 800, wordBreak: 'break-all' }}><LoginUrl fallback={loginUrl} /></p>
@@ -76,7 +76,7 @@ export default function Page() {
                 </Phone>
                 <Phone label="Bước 3: bấm Cài đặt">
                   <div className="ph-dialog">
-                    <img src="/icons/icon-192.png" alt="" width="40" height="40" />
+                    <img src="/icons/tn-icon-192.png" alt="" width="40" height="40" />
                     <strong>Cài đặt ứng dụng?</strong>
                     <span>Thống Nhất</span>
                     <div className="ph-dialog-btns"><span>Huỷ</span><span className="hl">Cài đặt</span></div>

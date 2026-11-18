@@ -862,3 +862,9 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .cus-table .c-owner { width: 150px; }
 
 .stop-status { margin-right: 6px; vertical-align: middle; }
+
+/* Điểm trả của đơn nhiều điểm: mỗi điểm một dòng, thẳng cột với đơn cha */
+.stop-row td { background: var(--soft) !important; font-size: .88rem; border-top: 1px dashed var(--line) !important; border-bottom: 0 !important; padding-top: 8px !important; padding-bottom: 8px !important; }
+.stop-row td:first-child { padding-left: 28px !important; }
+.stop-row-last td { border-bottom: 1px solid var(--line) !important; }
+.stop-row .stop-code { margin-right: 0; }

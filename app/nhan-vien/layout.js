@@ -9,9 +9,9 @@ export const metadata = {
   appleWebApp: { capable: true, title: 'Thống Nhất', statusBarStyle: 'black' },
   // Logo Thống Nhất trên tab trình duyệt và màn hình chính điện thoại
   icons: {
-    icon: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
-    shortcut: '/icons/icon-192.png',
-    apple: '/icons/apple-touch-icon.png',
+    icon: [{ url: '/icons/tn-icon-192.png', sizes: '192x192', type: 'image/png' }],
+    shortcut: '/icons/tn-icon-192.png',
+    apple: '/icons/tn-apple-touch-icon.png',
   },
 };
 

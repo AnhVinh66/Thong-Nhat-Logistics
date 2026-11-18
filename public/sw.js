@@ -1,11 +1,11 @@
 // Service worker cho app nhân viên / lái xe.
 // Không lưu dữ liệu chuyến hay ảnh vào bộ nhớ máy: luôn lấy bản mới nhất từ mạng.
 // Chỉ khi mất mạng mới hiện trang /offline.html.
-const CACHE = 'tnl-shell-v1';
+const CACHE = 'tnl-shell-v2'; // đổi số khi đổi logo / trang offline
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE_URL, '/icons/icon-192.png'])));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE_URL, '/icons/tn-icon-192.png'])));
   self.skipWaiting();
 });
 

@@ -62,7 +62,7 @@ export default function InstallApp({ compact = false }) {
             setMode('other');
           }}
         >
-          <img src="/icons/icon-192.png" alt="" width="24" height="24" /> Cài app vào điện thoại
+          <img src="/icons/tn-icon-192.png" alt="" width="24" height="24" /> Cài app vào điện thoại
         </button>
       </div>
     );
