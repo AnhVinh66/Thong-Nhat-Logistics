@@ -16,7 +16,7 @@ const mondayOf = (iso) => { const d = parse(iso); d.setDate(d.getDate() - ((d.ge
 const dm = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const dmy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const DOW = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, trip_seq, trip_period, fee, customers(name), order_stops(address, stop_no, position, customers(name))';
+const cols = 'id, order_no, order_type, pickup, delivery, plate, truck, driver, ship_date, trip_seq, trip_period, status, fee, customers(name), order_stops(address, stop_no, position, customers(name))';
 
 // Thứ tự trong một ô (xe + ngày): theo số chuyến đã xếp, chuyến chưa có số xếp sau theo mã đơn
 const PERIODS = [
@@ -222,7 +222,7 @@ export default function Page() {
                             {(i === 0 || (list[i - 1].trip_period || '') !== (o.trip_period || '')) && (list.some((x) => x.trip_period) || o.trip_period) && (
                               <div className={`trip-band band-${o.trip_period || 'none'}`}>{periodLabel(o.trip_period) || 'Chưa chọn buổi'}</div>
                             )}
-                          <div className="trip">
+                          <div className={`trip ${o.status === 'done' ? 'trip-done' : ''}`}>
                             <div className="trip-head">
                               <span className="trip-no" title={`Chuyến thứ ${i + 1} trong ngày`}>{i + 1}</span>
                               <strong>{orderCode(o.order_no)}</strong>
@@ -243,6 +243,7 @@ export default function Page() {
                               <span className="trip-cus">{whoOf(o)}</span>
                               <span className="trip-route">{routeOf(o)}</span>
                               {o.driver && <span className="trip-drv">{o.driver}</span>}
+                              <span className={`trip-status ${o.status === 'done' ? 'done' : 'open'}`}>{o.status === 'done' ? '✓ Hoàn thành' : 'Chưa hoàn thành'}</span>
                             </button>
                           </div>
                           </Fragment>

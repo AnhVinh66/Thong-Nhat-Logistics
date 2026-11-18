@@ -844,3 +844,10 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .seg-btn { font: inherit; font-weight: 600; font-size: .92rem; padding: 8px 16px; border: 0; background: #fff; cursor: pointer; color: var(--navy); }
 .seg-btn + .seg-btn { border-left: 1.5px solid var(--line); }
 .seg-btn.on { background: var(--navy); color: #fff; }
+
+.trip-status { margin-top: 3px; width: fit-content; font-size: .7rem; font-weight: 800; padding: 1px 8px; border-radius: 999px; }
+.trip-status.open { background: #fff1de; color: #9a4a00; }
+.trip-status.done { background: #dcfce7; color: #166534; }
+.trip-done { background: #f0fbf4; border-color: #b7e4c7; }
+.trip-done .trip-head { background: #d5f2df; }
+.trip-done .trip-no { background: #166534; }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase, vnd, orderCode, stopCode, fmtDate } from '../../../lib/supabase';
+import { supabase, vnd, orderCode, stopCode } from '../../../lib/supabase';
 import MoneyInput from '../../../components/staff/MoneyInput';
 import FeePopup from '../../../components/staff/FeePopup';
 import { drivers as defaultDrivers } from '../../../lib/site';
@@ -472,17 +472,6 @@ export default function Page() {
                     <td>{r.ship_date ? r.ship_date.split('-').reverse().join('/') : ''}</td>
                     <td className="o-status">
                       <span className={`st-pill ${r.status === 'done' ? 'st-paid' : 'st-pending'}`}>{r.status === 'done' ? 'Hoàn thành' : 'Chưa hoàn thành'}</span>
-                      {completeOrder && r.status !== 'done' && (
-                        <button
-                          className={`btn sm o-done ${hasDocs(r) ? 'btn-primary' : 'btn-outline'}`}
-                          onClick={() => setStatus(r, true)}
-                          title={hasDocs(r) ? 'Đánh dấu đơn đã hoàn thành' : 'Cần có biên bản giao nhận hoặc bill trước'}
-                        >✓ Hoàn thành</button>
-                      )}
-                      {completeOrder && r.status === 'done' && (
-                        <button className="btn btn-outline sm o-done" onClick={() => setStatus(r, false)}>↩ Mở lại</button>
-                      )}
-                      {r.status === 'done' && r.completed_at && <span className="muted small">{fmtDate(r.completed_at)}</span>}
                     </td>
                     <td className="num">
                       {vnd(r.fee)}
@@ -497,6 +486,16 @@ export default function Page() {
                         >
                           Chứng từ ({photoCounts[`${r.id}|`] || 0})
                         </button>
+                      )}
+                      {completeOrder && r.status !== 'done' && (
+                        <button
+                          className={`btn sm ${hasDocs(r) ? 'btn-primary' : 'btn-outline'}`}
+                          onClick={() => setStatus(r, true)}
+                          title={hasDocs(r) ? 'Đánh dấu đơn đã hoàn thành' : 'Cần có biên bản giao nhận hoặc bill trước'}
+                        >✓ Hoàn thành</button>
+                      )}
+                      {completeOrder && r.status === 'done' && (
+                        <button className="btn btn-outline sm" onClick={() => setStatus(r, false)}>↩ Mở lại</button>
                       )}
                       {editOrder && <button className="btn btn-outline sm" onClick={() => openEdit(r)}>Sửa</button>}
                       {deleteOrder && <button className="btn btn-danger sm" onClick={() => remove(r)}>Xoá</button>}
