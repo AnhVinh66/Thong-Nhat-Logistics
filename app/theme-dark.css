@@ -230,6 +230,15 @@ html[data-theme="dark"] .admin .ct-table th { background: hsl(214, 33%, 17%); }
 html[data-theme="dark"] .admin .pf-card { background: hsl(220, 30%, 14%); }
 html[data-theme="dark"] .admin .pf-role { color: hsl(26, 90%, 75%); background: hsl(48, 45%, 17%); }
 html[data-theme="dark"] .admin table:not(.plan-table) > thead > tr > th { border-right-color: hsla(220, 25%, 24%, 0.16) !important; }
+html[data-theme="dark"] .admin .site .btn-ghost { border: 1px solid hsla(220, 25%, 24%, 0.28); }
+html[data-theme="dark"] .admin .site .btn-ghost:hover { border-color: hsla(220, 25%, 24%, 0.45); }
+html[data-theme="dark"] .admin .site .hero { background: #22406b; }
+html[data-theme="dark"] .admin .ticket { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .ticket-ok { color: hsl(142, 72%, 79%); background: hsl(136, 41%, 18%); }
+html[data-theme="dark"] .admin .site .facts { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .site .step::before { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .site .cta-band { background: #22406b; }
+html[data-theme="dark"] .admin .site .page-hero { background: #22406b; }
 @media (max-width: 1080px) {
 html[data-theme="dark"] .admin .nav { background: hsl(220, 30%, 14%); }
 }

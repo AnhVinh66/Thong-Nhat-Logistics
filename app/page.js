@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Icon from '../components/Icon';
-import HeroArt from '../components/HeroArt';
+import TripTicket from '../components/TripTicket';
 import { site, stats, services, whyUs, steps, fleet } from '../lib/site';
 import { getAllPosts, formatDate } from '../lib/posts';
 
@@ -8,16 +8,15 @@ export default function Home() {
   const posts = getAllPosts().slice(0, 3);
   return (
     <>
-      <section className="hero">
+      <section className={`hero${site.heroPhoto ? ' has-photo' : ''}`}>
+        {site.heroPhoto && <img className="hero-photo" src={site.heroPhoto} alt="Xe tải Thống Nhất Logistic" />}
         <div className="container hero-in">
-          <div>
-            <p className="eyebrow" style={{ color: '#ffa45c' }}>Vận tải đường bộ toàn quốc</p>
-            <h1>
-              Hàng đến <em>đúng hẹn</em>,<br />an toàn trên mọi nẻo đường
-            </h1>
+          <div className="hero-text">
+            <p className="eyebrow">Vận tải hàng hoá đường bộ</p>
+            <h1>Thuê xe tải 1,5 – 7 tấn, giao đúng hẹn, có biên bản từng chuyến</h1>
             <p className="lead">
-              {site.name} cung cấp dịch vụ vận chuyển hàng hoá nội địa bằng xe tải từ 1,5 đến 7 tấn.
-              Báo giá nhanh, lộ trình rõ ràng, điều phối hỗ trợ 24/7.
+              {site.name} nhận chở hàng nguyên chuyến và ghép hàng từ Hà Nội đi các tỉnh.
+              Gửi điểm lấy, điểm giao và loại hàng, chúng tôi báo giá trọn gói.
             </p>
             <div className="hero-cta">
               <Link href="/bao-gia/" className="btn btn-primary btn-lg">
@@ -27,20 +26,15 @@ export default function Home() {
                 <Icon name="phone" size={18} /> {site.hotlineDisplay}
               </a>
             </div>
-            <ul className="badge-row">
-              <li><Icon name="check" size={16} /> Giá trọn gói minh bạch</li>
-              <li><Icon name="check" size={16} /> Theo dõi hành trình</li>
-              <li><Icon name="check" size={16} /> Hỗ trợ bảo hiểm hàng hoá</li>
-            </ul>
           </div>
-          <HeroArt />
+          <TripTicket />
         </div>
       </section>
 
-      <section className="stats" aria-label="Số liệu nổi bật">
-        <div className="container stats-in">
+      <section className="facts" aria-label="Thông tin chính">
+        <div className="container facts-in">
           {stats.map((s) => (
-            <div className="stat" key={s.label}>
+            <div className="fact" key={s.value}>
               <strong>{s.value}</strong>
               <span>{s.label}</span>
             </div>
@@ -52,13 +46,13 @@ export default function Home() {
         <div className="container">
           <div className="section-head">
             <p className="eyebrow">Dịch vụ</p>
-            <h2>Giải pháp vận chuyển cho mọi loại hàng</h2>
+            <h2>Nguyên chuyến, ghép hàng, hàng lạnh và hàng cồng kềnh</h2>
             <p className="muted">Từ lô hàng lẻ đến nguyên chuyến, chúng tôi đề xuất phương án phù hợp nhất với ngân sách và thời gian của bạn.</p>
           </div>
-          <div className="grid-3">
+          <div className="svc-list">
             {services.map((s) => (
-              <Link href="/dich-vu/" className="card" key={s.title}>
-                <div className="icon-box"><Icon name={s.icon} /></div>
+              <Link href="/dich-vu/" className="svc" key={s.title}>
+                <Icon name={s.icon} size={20} />
                 <h3>{s.title}</h3>
                 <p>{s.text}</p>
               </Link>
@@ -69,14 +63,14 @@ export default function Home() {
 
       <section className="section soft">
         <div className="container">
-          <div className="section-head center">
+          <div className="section-head">
             <p className="eyebrow">Vì sao chọn chúng tôi</p>
             <h2>Cam kết của Thống Nhất Logistic</h2>
           </div>
-          <div className="grid-4">
+          <div className="why-list">
             {whyUs.map((w) => (
-              <div className="card" key={w.title}>
-                <div className="icon-box"><Icon name={w.icon} /></div>
+              <div className="why" key={w.title}>
+                <Icon name={w.icon} size={20} />
                 <h3>{w.title}</h3>
                 <p>{w.text}</p>
               </div>
@@ -89,7 +83,7 @@ export default function Home() {
         <div className="container">
           <div className="section-head">
             <p className="eyebrow">Quy trình</p>
-            <h2>4 bước đơn giản để vận chuyển hàng</h2>
+            <h2>Từ cuộc gọi đến biên bản giao nhận</h2>
           </div>
           <ol className="steps">
             {steps.map((s) => (
@@ -106,7 +100,7 @@ export default function Home() {
         <div className="container">
           <div className="section-head">
             <p className="eyebrow">Đội xe</p>
-            <h2>Đa dạng tải trọng, đáp ứng mọi nhu cầu</h2>
+            <h2>Ba cỡ xe cho hàng nhẹ đến hàng pallet</h2>
           </div>
           <div className="table-wrap">
             <table className="fleet-table">
@@ -116,7 +110,7 @@ export default function Home() {
               <tbody>
                 {fleet.map((f) => (
                   <tr key={f.id}>
-                    <td><strong>{f.name}</strong></td>
+                    <td>{f.name}</td>
                     <td>{f.load}</td>
                     <td>{f.volume}</td>
                     <td>{f.size}</td>
@@ -134,7 +128,7 @@ export default function Home() {
           <div className="container">
             <div className="section-head">
               <p className="eyebrow">Tin tức</p>
-              <h2>Kiến thức & tin tức mới nhất</h2>
+              <h2>Kiến thức và tin tức vận tải</h2>
             </div>
             <div className="grid-3">
               {posts.map((p) => (
@@ -154,7 +148,7 @@ export default function Home() {
           <div className="cta-band">
             <div>
               <h2>Cần vận chuyển hàng hôm nay?</h2>
-              <p>Gọi ngay hoặc gửi yêu cầu, chúng tôi phản hồi báo giá nhanh chóng.</p>
+              <p>Gọi hotline hoặc gửi yêu cầu, điều phối viên báo giá trọn gói cho chuyến của bạn.</p>
             </div>
             <div className="hero-cta" style={{ marginTop: 0 }}>
               <Link href="/bao-gia/" className="btn btn-primary btn-lg">Nhận báo giá</Link>

@@ -3,6 +3,7 @@ import './globals.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import PublicOnly from '../components/PublicOnly';
+import MainArea from '../components/MainArea';
 import { site } from '../lib/site';
 
 const font = Be_Vietnam_Pro({
@@ -46,7 +47,7 @@ export default function RootLayout({ children }) {
       <body className={font.className}>
         <a href="#main" className="skip">Bỏ qua đến nội dung chính</a>
         <PublicOnly><Header /></PublicOnly>
-        <main id="main">{children}</main>
+        <MainArea>{children}</MainArea>
         <PublicOnly><Footer /></PublicOnly>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </body>
