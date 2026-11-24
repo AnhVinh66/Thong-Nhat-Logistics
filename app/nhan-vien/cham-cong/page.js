@@ -16,7 +16,6 @@ const STATUS = {
   leave: { mark: 'P', cong: 1, label: 'Nghỉ phép có lương (1 công)' },
   off: { mark: '✕', cong: 0, label: 'Nghỉ không lương (0 công)' },
 };
-const CYCLE = ['', 'full', 'half', 'leave', 'off']; // bấm liên tiếp vào ô để đổi; '' = bỏ chấm, quay về tự tính
 const DOW = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const fmtCong = (n) => String(Math.round(n * 2) / 2).replace('.', ',');
 
@@ -45,6 +44,7 @@ export default function Page() {
   const [pay, setPay] = useState({}); // tên -> { salary, std } (chuỗi, để gõ dở vẫn được)
   const [adj, setAdj] = useState({}); // tên -> { allowance, advance, deduction }
   const [night, setNight] = useState({}); // "tên|ngày" -> { a: số chuyến xe 3,5 tấn, b: số chuyến xe 7 tấn } (chuỗi)
+  const [menu, setMenu] = useState(null); // bảng chọn hiện ngay dưới ô vừa bấm: { kind: 'att' | 'night', name, date, cur, left, top }
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
@@ -124,11 +124,23 @@ export default function Page() {
   const sum = rows.reduce((s, r) => ({ base: s.base + r.base, bonus: s.bonus + r.bonus, night: s.night + r.nightBonus, ask: s.ask + r.ask, allowance: s.allowance + r.allowance, cut: s.cut + r.advance + r.deduction, net: s.net + r.net }), { base: 0, bonus: 0, night: 0, ask: 0, allowance: 0, cut: 0, net: 0 });
 
   // ----- Ghi dữ liệu -----
+  const openMenu = (e, kind, name, date, cur) => {
+    if (!canEdit) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setMenu({ kind, name, date, cur, left: Math.max(8, Math.min(r.left, window.innerWidth - 272)), top: r.bottom + 4 });
+  };
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e) => e.key === 'Escape' && setMenu(null);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menu]);
+
   const fail = () => setErr('Không lưu được. Chỉ Admin và Kế toán được sửa; hoặc chưa chạy supabase/cham-cong.sql.');
 
-  const cycle = async (name, date, cur) => {
-    if (!canEdit) return;
-    const next = CYCLE[(CYCLE.indexOf(cur) + 1) % CYCLE.length];
+  // next = '' nghĩa là bỏ chấm: ô quay về tự tính theo chuyến hàng
+  const chooseStatus = async (name, date, next) => {
+    setMenu(null);
     const key = `${name}|${date}`;
     setErr('');
     setAtt((s) => { const c = { ...s }; if (next) c[key] = next; else delete c[key]; return c; });
@@ -152,14 +164,16 @@ export default function Page() {
     });
     if (error) fail(); else setErr('');
   };
-  const setNightField = (name, date, k, v) => setNight((s) => ({ ...s, [`${name}|${date}`]: { a: '', b: '', ...s[`${name}|${date}`], [k]: v.replace(/\D/g, '').slice(0, 2) } }));
-  const saveNight = async (name, date) => {
-    const v = night[`${name}|${date}`] || {};
-    const a = Number(v.a || 0), b = Number(v.b || 0);
-    const { error } = a || b
-      ? await supabase.from('night_trips').upsert({ driver_name: name, work_date: date, trips_35: a, trips_7: b, updated_at: new Date().toISOString() })
+  // type: 't35' (xe 3,5 tấn) | 't7' (xe 7 tấn) | '' (bỏ chạy tối); mỗi ngày một buổi tối
+  const chooseNight = async (name, date, type) => {
+    setMenu(null);
+    const key = `${name}|${date}`;
+    setErr('');
+    setNight((s) => { const c = { ...s }; if (type) c[key] = { a: type === 't35' ? '1' : '', b: type === 't7' ? '1' : '' }; else delete c[key]; return c; });
+    const { error } = type
+      ? await supabase.from('night_trips').upsert({ driver_name: name, work_date: date, trips_35: type === 't35' ? 1 : 0, trips_7: type === 't7' ? 1 : 0, updated_at: new Date().toISOString() })
       : await supabase.from('night_trips').delete().eq('driver_name', name).eq('work_date', date);
-    if (error) fail(); else setErr('');
+    if (error) { fail(); load(); }
   };
   const setPayField =(name, k, v) => setPay((s) => ({ ...s, [name]: { salary: '0', std: '26', ...s[name], [k]: v } }));
   const setAdjField = (name, k, v) => setAdj((s) => ({ ...s, [name]: { allowance: '0', advance: '0', deduction: '0', ...s[name], [k]: v } }));
@@ -193,7 +207,7 @@ export default function Page() {
 
       <h2 className="att-h2">1. Bảng chấm công</h2>
       <div className="bonus-rules">
-        {canEdit ? 'Bấm vào ô để đổi trạng thái:' : 'Trạng thái:'}
+        {canEdit ? 'Bấm vào ô để chọn trạng thái:' : 'Trạng thái:'}
         {Object.values(STATUS).map((s) => <span key={s.mark} className="bonus-chip"><b>{s.mark}</b> {s.label}</span>)}
         <span className="bonus-chip"><b className="att-q">?</b> ngày không có chuyến, chờ quản lý chọn (chưa tính công)</span>
         <span className="bonus-chip"><b className="att-auto">✓</b> ngày có chạy đơn mà chưa chấm: tự tính đi làm</span>
@@ -216,7 +230,7 @@ export default function Page() {
                 <td className="att-name"><strong>{r.name}</strong></td>
                 {r.cells.map((c) => (
                   <td key={c.date} className={`att-cell${c.eff ? ` ${c.eff}` : ''}${c.eff && !c.rec ? ' auto' : ''}${c.pending ? ' ask' : ''}`}>
-                    <button type="button" disabled={!canEdit} onClick={() => cycle(r.name, c.date, c.rec)}
+                    <button type="button" disabled={!canEdit} onClick={(e) => openMenu(e, 'att', r.name, c.date, c.rec)}
                       title={`${c.date.slice(8)}/${c.date.slice(5, 7)}${c.n ? ` · ${c.n} đơn` : ''}${c.eff ? ` · ${STATUS[c.eff].label}${c.rec ? '' : ' (tự tính)'}` : c.pending ? ' · Không có chuyến, bấm để chọn trạng thái' : ''}`}>
                       {c.eff ? STATUS[c.eff].mark : c.pending ? '?' : ''}
                     </button>
@@ -233,7 +247,7 @@ export default function Page() {
 
       <h2 className="att-h2">2. Chạy buổi tối</h2>
       <div className="bonus-rules">
-        <strong>Thưởng mỗi chuyến chạy tối</strong> (nhập số chuyến từng ngày, tự lưu khi rời ô):
+        <strong>Thưởng chạy tối</strong> (bấm vào ô ngày lái xe chạy tối, rồi chọn loại xe):
         <span className="bonus-chip">Xe 3,5 tấn → <b>{vnd(NIGHT_RATES.t35)}</b></span>
         <span className="bonus-chip">Xe 7 tấn → <b>{vnd(NIGHT_RATES.t7)}</b></span>
       </div>
@@ -246,25 +260,29 @@ export default function Page() {
                 const dow = new Date(`${d}T00:00:00`).getDay();
                 return <th key={d} className={`att-day${dow === 0 ? ' sun' : ''}${d === today ? ' today' : ''}`}>{Number(d.slice(8))}<small>{DOW[dow]}</small></th>;
               })}
-              <th className="num">Chuyến</th><th className="num">Thưởng</th>
+              <th className="num">Số buổi tối</th><th className="num">Thưởng</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => [['a', 'Xe 3,5 tấn', r.n35, NIGHT_RATES.t35], ['b', 'Xe 7 tấn', r.n7, NIGHT_RATES.t7]].map(([k, label, total, rate], i) => (
-              <tr key={r.name + k} className={i === 1 ? 'att-night-last' : ''}>
-                {i === 0 ? <td className="att-name" rowSpan={2}><strong>{r.name}</strong></td> : null}
-                {r.cells.map((c) => (
-                  <td key={c.date} className="att-cell att-night">
-                    <input inputMode="numeric" disabled={!canEdit} aria-label={`${r.name} ${c.date.slice(8)}/${c.date.slice(5, 7)} ${label}`} title={label}
-                      className={night[`${r.name}|${c.date}`]?.[k] ? 'has' : ''}
-                      value={night[`${r.name}|${c.date}`]?.[k] ?? ''}
-                      onChange={(e) => setNightField(r.name, c.date, k, e.target.value)} onBlur={() => saveNight(r.name, c.date)} />
-                  </td>
-                ))}
-                <td className="num att-night-sum"><small>{label}</small> <strong>{total}</strong></td>
-                <td className="num">{vnd(total * rate)}</td>
+            {rows.map((r) => (
+              <tr key={r.name}>
+                <td className="att-name"><strong>{r.name}</strong></td>
+                {r.cells.map((c) => {
+                  const nt = night[`${r.name}|${c.date}`];
+                  const t = Number(nt?.a || 0) ? 't35' : Number(nt?.b || 0) ? 't7' : '';
+                  return (
+                    <td key={c.date} className={`att-cell att-night${t ? ` ${t}` : ''}`}>
+                      <button type="button" disabled={!canEdit} onClick={(e) => openMenu(e, 'night', r.name, c.date, t)}
+                        title={t ? `Chạy tối · ${t === 't35' ? 'xe 3,5 tấn' : 'xe 7 tấn'} · +${vnd(t === 't35' ? NIGHT_RATES.t35 : NIGHT_RATES.t7)}` : 'Bấm để chọn loại xe chạy tối'}>
+                        {t === 't35' ? '3,5' : t === 't7' ? '7' : ''}
+                      </button>
+                    </td>
+                  );
+                })}
+                <td className="num att-night-sum">{r.n35 + r.n7 > 0 ? [r.n35 && `${r.n35} × 3,5T`, r.n7 && `${r.n7} × 7T`].filter(Boolean).join(' · ') : '—'}</td>
+                <td className="num"><strong style={{ color: r.nightBonus ? 'var(--gold)' : 'var(--muted)' }}>{vnd(r.nightBonus)}</strong></td>
               </tr>
-            )))}
+            ))}
             {!loading && !rows.length && <tr><td colSpan={dim + 3} className="muted">Chưa có lái xe nào.</td></tr>}
           </tbody>
         </table>
@@ -315,6 +333,30 @@ export default function Page() {
           )}
         </table>
       </div>
+      {menu && (
+        <>
+          <div className="att-menu-back" onClick={() => setMenu(null)} />
+          <div className="att-menu" role="menu" style={{ left: menu.left, top: menu.top }}>
+            <p className="att-menu-cap">{menu.name} · {menu.date.slice(8)}/{menu.date.slice(5, 7)}{menu.kind === 'night' ? ' · chạy tối' : ''}</p>
+            {menu.kind === 'att' ? (
+              <>
+                {Object.entries(STATUS).map(([k, v]) => (
+                  <button key={k} type="button" role="menuitem" className={`att-opt ${k}${menu.cur === k ? ' on' : ''}`} onClick={() => chooseStatus(menu.name, menu.date, k)}>
+                    <b>{v.mark}</b><span>{v.label}</span>
+                  </button>
+                ))}
+                {menu.cur && <button type="button" role="menuitem" className="att-opt clear" onClick={() => chooseStatus(menu.name, menu.date, '')}><b>↺</b><span>Bỏ chấm (tự tính theo chuyến hàng)</span></button>}
+              </>
+            ) : (
+              <>
+                <button type="button" role="menuitem" className={`att-opt t35${menu.cur === 't35' ? ' on' : ''}`} onClick={() => chooseNight(menu.name, menu.date, 't35')}><b>3,5</b><span>Xe 3,5 tấn · <em>+ {vnd(NIGHT_RATES.t35)}</em></span></button>
+                <button type="button" role="menuitem" className={`att-opt t7${menu.cur === 't7' ? ' on' : ''}`} onClick={() => chooseNight(menu.name, menu.date, 't7')}><b>7</b><span>Xe 7 tấn · <em>+ {vnd(NIGHT_RATES.t7)}</em></span></button>
+                {menu.cur && <button type="button" role="menuitem" className="att-opt clear" onClick={() => chooseNight(menu.name, menu.date, '')}><b>✕</b><span>Bỏ chạy tối ngày này</span></button>}
+              </>
+            )}
+          </div>
+        </>
+      )}
     </>
   );
 }
