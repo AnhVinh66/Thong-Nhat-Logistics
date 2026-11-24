@@ -29,6 +29,7 @@ const VIEW = {
   '/nhan-vien/ngan-hang': ['staff', 'accountant'],
   '/nhan-vien/xe': ['staff', 'accountant', 'dispatcher'],
   '/nhan-vien/lai-xe': ['staff', 'accountant', 'dispatcher'],
+  '/nhan-vien/cham-cong': ['staff', 'accountant'],
   '/nhan-vien/ke-hoach': ['staff', 'accountant', 'dispatcher'],
   '/nhan-vien/tai-khoan': ['staff'],
   '/nhan-vien/ca-nhan': ['staff', 'sales', 'accountant', 'dispatcher'],

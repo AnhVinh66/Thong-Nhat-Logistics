@@ -239,6 +239,17 @@ html[data-theme="dark"] .admin .site .facts { background: hsl(220, 30%, 14%); }
 html[data-theme="dark"] .admin .site .step::before { background: hsl(220, 30%, 14%); }
 html[data-theme="dark"] .admin .site .cta-band { background: #22406b; }
 html[data-theme="dark"] .admin .site .page-hero { background: #22406b; }
+html[data-theme="dark"] .admin .att-table .att-name { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .att-day.sun { color: hsl(0, 74%, 72%); }
+html[data-theme="dark"] .admin .att-day.today { background: hsl(48, 45%, 24%); }
+html[data-theme="dark"] .admin .att-cell button { border: 1px solid hsl(217, 30%, 28%); background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .att-cell.full button { background: hsl(141, 45%, 20%); color: hsl(143, 64%, 82%); }
+html[data-theme="dark"] .admin .att-cell.half button { background: hsl(55, 45%, 24%); color: hsl(32, 81%, 79%); }
+html[data-theme="dark"] .admin .att-cell.leave button { background: hsl(214, 45%, 20%); border-color: hsl(212, 35%, 35%); color: hsl(226, 71%, 73%); }
+html[data-theme="dark"] .admin .att-cell.off button { background: hsl(0, 45%, 19%); border-color: hsl(0, 35%, 33%); color: hsl(0, 70%, 76%); }
+html[data-theme="dark"] .admin .att-cell.auto button { background: hsl(138, 45%, 17%); color: hsl(142, 69%, 63%); }
+html[data-theme="dark"] .admin .att-auto { color: hsl(142, 69%, 63%); }
+html[data-theme="dark"] .admin .att-in { background: hsl(48, 45%, 17%); }
 @media (max-width: 1080px) {
 html[data-theme="dark"] .admin .nav { background: hsl(220, 30%, 14%); }
 }

@@ -1274,3 +1274,27 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
   .site .cta-band { padding: 32px 24px; }
   .site .cta-band::before { left: 24px; right: 24px; }
 }
+
+/* ===== Chấm công & lương lái xe ===== */
+.att-h2 { font-size: 1.15rem; margin: 22px 0 10px; }
+.att-table { border-collapse: separate; border-spacing: 0; font-size: .85rem; }
+.att-table th, .att-table td { padding: 4px 2px; text-align: center; border-bottom: 1px solid var(--line); }
+.att-table .att-name { position: sticky; left: 0; z-index: 1; background: #fff; text-align: left; padding: 6px 12px; min-width: 130px; white-space: nowrap; }
+.att-day { min-width: 32px; font-size: .82rem; }
+.att-day small { display: block; font-weight: 500; font-size: .66rem; color: var(--muted); }
+.att-day.sun { color: #b91c1c; }
+.att-day.today { background: #fef3c7; }
+.att-cell { padding: 2px !important; }
+.att-cell button { width: 30px; height: 30px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font: inherit; font-weight: 700; color: var(--navy); cursor: pointer; padding: 0; }
+.att-cell button:disabled { cursor: default; }
+.att-cell.full button { background: #dcfce7; border-color: #86efac; color: #166534; }
+.att-cell.half button { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+.att-cell.leave button { background: #dbeafe; border-color: #93c5fd; color: #1e40af; }
+.att-cell.off button { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+.att-cell.auto button { background: #f0fdf4; border-style: dashed; color: #4ade80; }
+.att-auto { color: #4ade80; }
+.att-in { width: 130px; text-align: right; padding: 6px 8px; border: 1.5px solid #fcd34d; background: #fffbeb; border-radius: 8px; font: inherit; }
+.att-in.att-std { width: 64px; }
+.att-in:disabled { background: transparent; border-color: transparent; }
+.att-sub { display: block; font-size: .7rem; color: var(--muted); }
+.att-pay td { vertical-align: middle; }
