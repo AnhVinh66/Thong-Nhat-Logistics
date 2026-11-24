@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, vnd } from '../../../lib/supabase';
 import { drivers as defaultDrivers } from '../../../lib/site';
 import { rangeOf, shiftAnchor, todayIso, pad } from '../../../lib/period';
-import { dailyBonus, orderRevenue } from '../../../lib/driver';
+import { dailyBonus, orderRevenue, NIGHT_RATES } from '../../../lib/driver';
 import MoneyInput from '../../../components/staff/MoneyInput';
 import DateInput from '../../../components/DateInput';
 import { useRole } from '../../../components/staff/Role';
@@ -37,12 +37,14 @@ async function fetchOrders(from, to) {
 export default function Page() {
   const { role } = useRole();
   const canEdit = role === 'staff' || role === 'accountant';
+  const today = todayIso();
   const [anchor, setAnchor] = useState(todayIso);
   const [orders, setOrders] = useState([]);
   const [names, setNames] = useState(defaultDrivers);
   const [att, setAtt] = useState({}); // "tên|ngày" -> trạng thái
   const [pay, setPay] = useState({}); // tên -> { salary, std } (chuỗi, để gõ dở vẫn được)
   const [adj, setAdj] = useState({}); // tên -> { allowance, advance, deduction }
+  const [night, setNight] = useState({}); // "tên|ngày" -> { a: số chuyến xe 3,5 tấn, b: số chuyến xe 7 tấn } (chuỗi)
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
@@ -53,20 +55,22 @@ export default function Page() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [o, d, a, p, j] = await Promise.all([
+    const [o, d, a, p, j, nt] = await Promise.all([
       fetchOrders(range.from, range.to),
       supabase.from('staff_roles').select('driver_name').eq('role', 'driver'),
       supabase.from('attendance').select('driver_name, work_date, status').gte('work_date', range.from).lte('work_date', range.to),
       supabase.from('driver_pay').select('driver_name, monthly_salary, std_days'),
       supabase.from('payroll_month').select('driver_name, allowance, advance, deduction').eq('month', month),
+      supabase.from('night_trips').select('driver_name, work_date, trips_35, trips_7').gte('work_date', range.from).lte('work_date', range.to),
     ]);
-    const bad = [o, a, p, j].find((x) => x.error);
+    const bad = [o, a, p, j, nt].find((x) => x.error);
     setErr(bad ? 'Không tải được dữ liệu. Nếu chưa chạy supabase/cham-cong.sql trong Supabase thì hãy chạy file đó trước.' : '');
     setOrders(o.data || []);
     if (!d.error && d.data) setNames([...new Set([...d.data.map((x) => x.driver_name).filter(Boolean), ...defaultDrivers])]);
     setAtt(Object.fromEntries((a.data || []).map((x) => [`${x.driver_name}|${x.work_date}`, x.status])));
     setPay(Object.fromEntries((p.data || []).map((x) => [x.driver_name, { salary: String(x.monthly_salary ?? 0), std: String(x.std_days ?? 26) }])));
     setAdj(Object.fromEntries((j.data || []).map((x) => [x.driver_name, { allowance: String(x.allowance ?? 0), advance: String(x.advance ?? 0), deduction: String(x.deduction ?? 0) }])));
+    setNight(Object.fromEntries((nt.data || []).map((x) => [`${x.driver_name}|${x.work_date}`, { a: x.trips_35 ? String(x.trips_35) : '', b: x.trips_7 ? String(x.trips_7) : '' }])));
     setLoading(false);
   }, [range.from, range.to, month]);
 
@@ -91,26 +95,33 @@ export default function Page() {
   }, [names, work]);
 
   const rows = useMemo(() => allNames.map((name) => {
-    let cong = 0, auto = 0, off = 0, leave = 0;
+    let cong = 0, auto = 0, off = 0, leave = 0, ask = 0, n35 = 0, n7 = 0;
     const cells = dates.map((date) => {
       const rec = att[`${name}|${date}`] || '';
       const eff = rec || (work[name]?.[date] ? 'full' : '');
+      // Ngày (đã tới) không có chuyến và chưa chấm: hiện ? đỏ để quản lý chọn trạng thái
+      const pending = !eff && date <= today;
       if (eff) cong += STATUS[eff].cong;
       if (!rec && eff) auto += 1;
       if (eff === 'off') off += 1;
       if (eff === 'leave') leave += 1;
-      return { date, rec, eff, n: work[name]?.[date]?.n || 0 };
+      if (pending) ask += 1;
+      const nt = night[`${name}|${date}`];
+      n35 += Number(nt?.a || 0);
+      n7 += Number(nt?.b || 0);
+      return { date, rec, eff, pending, n: work[name]?.[date]?.n || 0 };
     });
+    const nightBonus = n35 * NIGHT_RATES.t35 + n7 * NIGHT_RATES.t7;
     const salary = Number(pay[name]?.salary || 0);
     const std = Number(pay[name]?.std || 26) || 26;
     const base = Math.round((salary / std) * cong);
     const bonus = Object.values(work[name] || {}).reduce((a, x) => a + dailyBonus(x.done), 0);
     const a = adj[name] || {};
     const allowance = Number(a.allowance || 0), advance = Number(a.advance || 0), deduction = Number(a.deduction || 0);
-    return { name, cells, cong, auto, off, leave, salary, std, base, bonus, allowance, advance, deduction, net: base + bonus + allowance - advance - deduction };
-  }), [allNames, dates, att, work, pay, adj]);
+    return { name, cells, cong, auto, off, leave, ask, n35, n7, nightBonus, salary, std, base, bonus, allowance, advance, deduction, net: base + bonus + nightBonus + allowance - advance - deduction };
+  }), [allNames, dates, att, work, pay, adj, night, today]);
 
-  const sum = rows.reduce((s, r) => ({ base: s.base + r.base, bonus: s.bonus + r.bonus, allowance: s.allowance + r.allowance, cut: s.cut + r.advance + r.deduction, net: s.net + r.net }), { base: 0, bonus: 0, allowance: 0, cut: 0, net: 0 });
+  const sum = rows.reduce((s, r) => ({ base: s.base + r.base, bonus: s.bonus + r.bonus, night: s.night + r.nightBonus, ask: s.ask + r.ask, allowance: s.allowance + r.allowance, cut: s.cut + r.advance + r.deduction, net: s.net + r.net }), { base: 0, bonus: 0, night: 0, ask: 0, allowance: 0, cut: 0, net: 0 });
 
   // ----- Ghi dữ liệu -----
   const fail = () => setErr('Không lưu được. Chỉ Admin và Kế toán được sửa; hoặc chưa chạy supabase/cham-cong.sql.');
@@ -141,10 +152,17 @@ export default function Page() {
     });
     if (error) fail(); else setErr('');
   };
-  const setPayField = (name, k, v) => setPay((s) => ({ ...s, [name]: { salary: '0', std: '26', ...s[name], [k]: v } }));
+  const setNightField = (name, date, k, v) => setNight((s) => ({ ...s, [`${name}|${date}`]: { a: '', b: '', ...s[`${name}|${date}`], [k]: v.replace(/\D/g, '').slice(0, 2) } }));
+  const saveNight = async (name, date) => {
+    const v = night[`${name}|${date}`] || {};
+    const a = Number(v.a || 0), b = Number(v.b || 0);
+    const { error } = a || b
+      ? await supabase.from('night_trips').upsert({ driver_name: name, work_date: date, trips_35: a, trips_7: b, updated_at: new Date().toISOString() })
+      : await supabase.from('night_trips').delete().eq('driver_name', name).eq('work_date', date);
+    if (error) fail(); else setErr('');
+  };
+  const setPayField =(name, k, v) => setPay((s) => ({ ...s, [name]: { salary: '0', std: '26', ...s[name], [k]: v } }));
   const setAdjField = (name, k, v) => setAdj((s) => ({ ...s, [name]: { allowance: '0', advance: '0', deduction: '0', ...s[name], [k]: v } }));
-
-  const today = todayIso();
 
   return (
     <>
@@ -162,19 +180,22 @@ export default function Page() {
         <strong className="period-label">{range.label}</strong>
       </div>
 
-      <div className="kpis" style={{ marginBottom: 14, gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+      <div className="kpis" style={{ marginBottom: 14, gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
         <div className="kpi"><span className="kpi-text"><span className="kpi-label">Lương theo ngày công</span><span className="kpi-value">{vnd(sum.base)}</span><span className="kpi-sub">{rows.length} lái xe</span></span></div>
         <div className="kpi"><span className="kpi-text"><span className="kpi-label">Thưởng doanh số</span><span className="kpi-value" style={{ color: 'var(--gold)' }}>{vnd(sum.bonus)}</span><span className="kpi-sub">cộng thưởng từng ngày</span></span></div>
+        <div className="kpi"><span className="kpi-text"><span className="kpi-label">Thưởng chạy tối</span><span className="kpi-value" style={{ color: 'var(--gold)' }}>{vnd(sum.night)}</span><span className="kpi-sub">nhập tay ở mục 2</span></span></div>
         <div className="kpi"><span className="kpi-text"><span className="kpi-label">Phụ cấp − tạm ứng − khấu trừ</span><span className="kpi-value">{vnd(sum.allowance - sum.cut)}</span><span className="kpi-sub">cộng {vnd(sum.allowance)} · trừ {vnd(sum.cut)}</span></span></div>
         <div className="kpi"><span className="kpi-text"><span className="kpi-label">Tổng thực lãnh</span><span className="kpi-value" style={{ color: 'var(--ok)' }}>{vnd(sum.net)}</span><span className="kpi-sub">cần chi cho lái xe tháng này</span></span></div>
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
+      {sum.ask > 0 && <p className="att-warn" role="status">Còn <b>{sum.ask}</b> ô <b>?</b> đỏ chưa chọn trạng thái (ngày không có chuyến hàng). Bấm vào ô để chọn: lái xe vẫn đi làm thì chọn ✓, nghỉ thì chọn P hoặc ✕.</p>}
 
       <h2 className="att-h2">1. Bảng chấm công</h2>
       <div className="bonus-rules">
         {canEdit ? 'Bấm vào ô để đổi trạng thái:' : 'Trạng thái:'}
         {Object.values(STATUS).map((s) => <span key={s.mark} className="bonus-chip"><b>{s.mark}</b> {s.label}</span>)}
+        <span className="bonus-chip"><b className="att-q">?</b> ngày không có chuyến, chờ quản lý chọn (chưa tính công)</span>
         <span className="bonus-chip"><b className="att-auto">✓</b> ngày có chạy đơn mà chưa chấm: tự tính đi làm</span>
       </div>
       <div className="table-wrap">
@@ -194,14 +215,14 @@ export default function Page() {
               <tr key={r.name}>
                 <td className="att-name"><strong>{r.name}</strong></td>
                 {r.cells.map((c) => (
-                  <td key={c.date} className={`att-cell${c.eff ? ` ${c.eff}` : ''}${c.eff && !c.rec ? ' auto' : ''}`}>
+                  <td key={c.date} className={`att-cell${c.eff ? ` ${c.eff}` : ''}${c.eff && !c.rec ? ' auto' : ''}${c.pending ? ' ask' : ''}`}>
                     <button type="button" disabled={!canEdit} onClick={() => cycle(r.name, c.date, c.rec)}
-                      title={`${c.date.slice(8)}/${c.date.slice(5, 7)}${c.n ? ` · ${c.n} đơn` : ''}${c.eff ? ` · ${STATUS[c.eff].label}${c.rec ? '' : ' (tự tính)'}` : ''}`}>
-                      {c.eff ? STATUS[c.eff].mark : ''}
+                      title={`${c.date.slice(8)}/${c.date.slice(5, 7)}${c.n ? ` · ${c.n} đơn` : ''}${c.eff ? ` · ${STATUS[c.eff].label}${c.rec ? '' : ' (tự tính)'}` : c.pending ? ' · Không có chuyến, bấm để chọn trạng thái' : ''}`}>
+                      {c.eff ? STATUS[c.eff].mark : c.pending ? '?' : ''}
                     </button>
                   </td>
                 ))}
-                <td className="num"><strong>{fmtCong(r.cong)}</strong></td>
+                <td className="num"><strong>{fmtCong(r.cong)}</strong>{r.ask > 0 && <small className="att-q-n">{r.ask} ?</small>}</td>
               </tr>
             ))}
             {loading && <tr><td colSpan={dim + 2} className="muted">Đang tải...</td></tr>}
@@ -210,16 +231,55 @@ export default function Page() {
         </table>
       </div>
 
-      <h2 className="att-h2">2. Tính lương tháng</h2>
+      <h2 className="att-h2">2. Chạy buổi tối</h2>
+      <div className="bonus-rules">
+        <strong>Thưởng mỗi chuyến chạy tối</strong> (nhập số chuyến từng ngày, tự lưu khi rời ô):
+        <span className="bonus-chip">Xe 3,5 tấn → <b>{vnd(NIGHT_RATES.t35)}</b></span>
+        <span className="bonus-chip">Xe 7 tấn → <b>{vnd(NIGHT_RATES.t7)}</b></span>
+      </div>
+      <div className="table-wrap">
+        <table className="staff-table att-table">
+          <thead>
+            <tr>
+              <th className="att-name">Lái xe</th>
+              {dates.map((d) => {
+                const dow = new Date(`${d}T00:00:00`).getDay();
+                return <th key={d} className={`att-day${dow === 0 ? ' sun' : ''}${d === today ? ' today' : ''}`}>{Number(d.slice(8))}<small>{DOW[dow]}</small></th>;
+              })}
+              <th className="num">Chuyến</th><th className="num">Thưởng</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => [['a', 'Xe 3,5 tấn', r.n35, NIGHT_RATES.t35], ['b', 'Xe 7 tấn', r.n7, NIGHT_RATES.t7]].map(([k, label, total, rate], i) => (
+              <tr key={r.name + k} className={i === 1 ? 'att-night-last' : ''}>
+                {i === 0 ? <td className="att-name" rowSpan={2}><strong>{r.name}</strong></td> : null}
+                {r.cells.map((c) => (
+                  <td key={c.date} className="att-cell att-night">
+                    <input inputMode="numeric" disabled={!canEdit} aria-label={`${r.name} ${c.date.slice(8)}/${c.date.slice(5, 7)} ${label}`} title={label}
+                      className={night[`${r.name}|${c.date}`]?.[k] ? 'has' : ''}
+                      value={night[`${r.name}|${c.date}`]?.[k] ?? ''}
+                      onChange={(e) => setNightField(r.name, c.date, k, e.target.value)} onBlur={() => saveNight(r.name, c.date)} />
+                  </td>
+                ))}
+                <td className="num att-night-sum"><small>{label}</small> <strong>{total}</strong></td>
+                <td className="num">{vnd(total * rate)}</td>
+              </tr>
+            )))}
+            {!loading && !rows.length && <tr><td colSpan={dim + 3} className="muted">Chưa có lái xe nào.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="att-h2">3. Tính lương tháng</h2>
       <p className="muted small" style={{ margin: '0 0 8px' }}>
-        Lương theo công = lương tháng ÷ ngày công chuẩn × số công. Thực lãnh = lương theo công + thưởng doanh số + phụ cấp − tạm ứng − khấu trừ. Ô vàng nhập tay, tự lưu khi rời ô.
+        Lương theo công = lương tháng ÷ ngày công chuẩn × số công. Thực lãnh = lương theo công + thưởng doanh số + thưởng chạy tối + phụ cấp − tạm ứng − khấu trừ. Ô vàng nhập tay, tự lưu khi rời ô.
       </p>
       <div className="table-wrap">
         <table className="staff-table fleet-table att-pay">
           <thead>
             <tr>
               <th>Lái xe</th><th className="num">Lương tháng</th><th className="num">Công chuẩn</th><th className="num">Số công</th>
-              <th className="num">Lương theo công</th><th className="num">Thưởng doanh số</th><th className="num">Phụ cấp / thưởng khác</th>
+              <th className="num">Lương theo công</th><th className="num">Thưởng doanh số</th><th className="num">Thưởng chạy tối</th><th className="num">Phụ cấp / thưởng khác</th>
               <th className="num">Tạm ứng</th><th className="num">Khấu trừ</th><th className="num">Thực lãnh</th>
             </tr>
           </thead>
@@ -229,9 +289,10 @@ export default function Page() {
                 <td><strong>{r.name}</strong></td>
                 <td className="num"><MoneyInput className="att-in" disabled={!canEdit} value={pay[r.name]?.salary === '0' ? '' : (pay[r.name]?.salary ?? '')} onChange={(e) => setPayField(r.name, 'salary', e.target.value.replace(/\D/g, ''))} onBlur={() => savePay(r.name)} placeholder="0" /></td>
                 <td className="num"><input className="att-in att-std" disabled={!canEdit} inputMode="decimal" value={pay[r.name]?.std ?? '26'} onChange={(e) => setPayField(r.name, 'std', e.target.value.replace(/[^\d.]/g, ''))} onBlur={() => savePay(r.name)} /></td>
-                <td className="num"><strong>{fmtCong(r.cong)}</strong>{(r.auto > 0 || r.off > 0 || r.leave > 0) && <small className="att-sub">{[r.auto && `${r.auto} tự tính`, r.leave && `${r.leave} phép`, r.off && `${r.off} nghỉ`].filter(Boolean).join(' · ')}</small>}</td>
+                <td className="num"><strong>{fmtCong(r.cong)}</strong>{(r.auto > 0 || r.off > 0 || r.leave > 0) && <small className="att-sub">{[r.ask && `${r.ask} ngày chưa chọn`, r.auto && `${r.auto} tự tính`, r.leave && `${r.leave} phép`, r.off && `${r.off} nghỉ`].filter(Boolean).join(' · ')}</small>}</td>
                 <td className="num">{vnd(r.base)}</td>
                 <td className="num"><span style={{ color: r.bonus ? 'var(--gold)' : 'var(--muted)' }}>{vnd(r.bonus)}</span></td>
+                <td className="num"><span style={{ color: r.nightBonus ? 'var(--gold)' : 'var(--muted)' }}>{vnd(r.nightBonus)}</span>{(r.n35 > 0 || r.n7 > 0) && <small className="att-sub">{r.n35} chuyến 3,5T · {r.n7} chuyến 7T</small>}</td>
                 <td className="num"><MoneyInput className="att-in" disabled={!canEdit} value={adj[r.name]?.allowance === '0' ? '' : (adj[r.name]?.allowance ?? '')} onChange={(e) => setAdjField(r.name, 'allowance', e.target.value.replace(/\D/g, ''))} onBlur={() => saveAdj(r.name)} placeholder="0" /></td>
                 <td className="num"><MoneyInput className="att-in" disabled={!canEdit} value={adj[r.name]?.advance === '0' ? '' : (adj[r.name]?.advance ?? '')} onChange={(e) => setAdjField(r.name, 'advance', e.target.value.replace(/\D/g, ''))} onBlur={() => saveAdj(r.name)} placeholder="0" /></td>
                 <td className="num"><MoneyInput className="att-in" disabled={!canEdit} value={adj[r.name]?.deduction === '0' ? '' : (adj[r.name]?.deduction ?? '')} onChange={(e) => setAdjField(r.name, 'deduction', e.target.value.replace(/\D/g, ''))} onBlur={() => saveAdj(r.name)} placeholder="0" /></td>
@@ -245,6 +306,7 @@ export default function Page() {
                 <td colSpan={4}><strong>Tổng ({rows.length} lái xe)</strong></td>
                 <td className="num"><strong>{vnd(sum.base)}</strong></td>
                 <td className="num"><strong>{vnd(sum.bonus)}</strong></td>
+                <td className="num"><strong>{vnd(sum.night)}</strong></td>
                 <td className="num"><strong>{vnd(sum.allowance)}</strong></td>
                 <td className="num" colSpan={2}><strong>− {vnd(sum.cut)}</strong></td>
                 <td className="num"><strong>{vnd(sum.net)}</strong></td>

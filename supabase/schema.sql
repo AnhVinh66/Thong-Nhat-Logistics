@@ -1868,3 +1868,15 @@ drop policy if exists "fin all" on public.payroll_month;
 create policy "fin all" on public.attendance for all to authenticated using (public.is_fin()) with check (public.is_fin());
 create policy "fin all" on public.driver_pay for all to authenticated using (public.is_fin()) with check (public.is_fin());
 create policy "fin all" on public.payroll_month for all to authenticated using (public.is_fin()) with check (public.is_fin());
+
+create table if not exists public.night_trips (
+  driver_name text not null,
+  work_date date not null,
+  trips_35 int not null default 0 check (trips_35 >= 0),
+  trips_7 int not null default 0 check (trips_7 >= 0),
+  updated_at timestamptz not null default now(),
+  primary key (driver_name, work_date)
+);
+alter table public.night_trips enable row level security;
+drop policy if exists "fin all" on public.night_trips;
+create policy "fin all" on public.night_trips for all to authenticated using (public.is_fin()) with check (public.is_fin());

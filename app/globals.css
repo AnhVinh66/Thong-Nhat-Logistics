@@ -1298,3 +1298,12 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .att-in:disabled { background: transparent; border-color: transparent; }
 .att-sub { display: block; font-size: .7rem; color: var(--muted); }
 .att-pay td { vertical-align: middle; }
+.att-cell.ask button { background: #fff1f2; border-color: #f87171; color: #dc2626; font-size: 1rem; }
+.att-q, .att-q-n { color: #dc2626; }
+.att-q-n { display: block; font-size: .68rem; font-weight: 700; }
+.att-warn { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; border-radius: 12px; padding: 10px 14px; margin: 0 0 14px; font-size: .9rem; }
+.att-night input { width: 30px; height: 26px; border: 1px solid #e3e8f0; border-radius: 6px; text-align: center; font: inherit; font-size: .82rem; padding: 0; background: #fff; }
+.att-night input.has { background: #fef3c7; border-color: #fcd34d; font-weight: 700; }
+.att-night input:disabled { background: transparent; }
+.att-night-last > td { border-bottom: 2px solid var(--line); }
+.att-night-sum small { color: var(--muted); font-weight: 500; }
