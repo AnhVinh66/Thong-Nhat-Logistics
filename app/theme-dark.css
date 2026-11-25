@@ -268,6 +268,13 @@ html[data-theme="dark"] .admin .att-opt.leave b,
 html[data-theme="dark"] .admin .att-opt.t35 b { background: hsl(214, 45%, 20%); border-color: hsl(212, 35%, 35%); color: hsl(226, 71%, 73%); }
 html[data-theme="dark"] .admin .att-opt.off b { background: hsl(0, 45%, 19%); border-color: hsl(0, 35%, 33%); color: hsl(0, 70%, 76%); }
 html[data-theme="dark"] .admin .att-opt.t7 b { background: hsl(251, 45%, 18%); border-color: hsl(252, 35%, 31%); color: hsl(263, 69%, 72%); }
+html[data-theme="dark"] .admin .gps-item { background: hsl(220, 30%, 14%); }
+html[data-theme="dark"] .admin .gps-item:hover { border-color: hsl(217, 29%, 33%); }
+html[data-theme="dark"] .admin .gps-dot { border: 3px solid hsl(220, 25%, 24%); }
+html[data-theme="dark"] .admin .pill-idle { background: hsl(53, 45%, 34%); color: hsl(28, 73%, 81%); }
+html[data-theme="dark"] .admin .gps-arrow { border-bottom: 9px solid hsl(220, 25%, 24%); }
+html[data-theme="dark"] .admin .exp-table .refill-row > td { background: hsl(48, 45%, 17%); }
+html[data-theme="dark"] .admin .gps-stop { border: 2px solid hsl(220, 25%, 24%); }
 @media (max-width: 1080px) {
 html[data-theme="dark"] .admin .nav { background: hsl(220, 30%, 14%); }
 }

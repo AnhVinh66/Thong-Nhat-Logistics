@@ -12,6 +12,9 @@ import DropZone from '../../../components/staff/DropZone';
 import RowActions, { ViewBtn, DeleteBtn } from '../../../components/staff/RowActions';
 import { useRole } from '../../../components/staff/Role';
 import { compress } from '../../../components/staff/DeliveryDocs';
+import { syncRefills, isWaiting, refillDay, refillTime, refillContent } from '../../../lib/fuelRefills';
+import { callVietmap, plateKey } from '../../../lib/vietmap';
+import { shiftAnchor, todayIso } from '../../../lib/period';
 
 const dmy = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
 const stamp = fmtDateTime;
@@ -48,6 +51,21 @@ function reconOf(r, cands, banks) {
     return { state: 'bad', text: `Có dòng sao kê tiền ra cùng số tiền nhưng ở ngân hàng khác (${names}). Hãy sửa ngân hàng.` };
   }
   return { state: 'bad', text: 'Chưa có dòng sao kê tiền ra nào đúng ngân hàng, số tiền và ngày. Hãy tải sao kê ngân hàng hoặc kiểm tra lại thông tin phiếu.' };
+}
+
+// Tìm lần đổ dầu mới từ Vietmap, nhiều nhất 10 phút một lần trên mỗi máy
+const SYNC_KEY = 'tn-fuel-sync';
+async function findNewRefills() {
+  try {
+    if (Date.now() - Number(localStorage.getItem(SYNC_KEY) || 0) < 600000) return;
+  } catch {}
+  const [gps, cms] = await Promise.all([callVietmap('vehicles'), supabase.from('vehicles').select('id, plate')]);
+  const ids = Object.fromEntries((cms.data || []).map((v) => [plateKey(v.plate), v.id]));
+  const today = todayIso();
+  await syncRefills(gps.map((g) => ({ id: g.id, cmsId: ids[plateKey(g.plate)] })), shiftAnchor('day', today, -30), today);
+  try {
+    localStorage.setItem(SYNC_KEY, String(Date.now()));
+  } catch {}
 }
 
 function StatusPill({ status }) {
@@ -176,7 +194,7 @@ function Detail({ row, recon, onClose, onChanged, onEdit, onStatus }) {
 }
 
 export default function Page() {
-  const { manageAllExpenses, userId } = useRole();
+  const { manageAllExpenses, viewRefills, userId } = useRole();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -192,6 +210,31 @@ export default function Page() {
   const [notice, setNotice] = useState(null);
   const [cands, setCands] = useState([]);
   const [banks, setBanks] = useState({});
+  const [refills, setRefills] = useState([]); // lần đổ dầu chờ nhập tiền
+  const [refillErr, setRefillErr] = useState('');
+
+  const loadWaiting = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('fuel_refills').select('*, vehicles(plate)')
+      .eq('needs_voucher', true).is('expense_id', null).is('skipped_at', null)
+      .order('refilled_at', { ascending: false });
+    if (!error) setRefills((data || []).filter(isWaiting));
+    return !error;
+  }, []);
+
+  // Chưa chạy do-dau.sql thì trang Chi tiền vẫn dùng bình thường
+  useEffect(() => {
+    if (!viewRefills) return;
+    (async () => {
+      if (!(await loadWaiting())) return;
+      try {
+        await findNewRefills();
+        await loadWaiting();
+      } catch (e) {
+        setRefillErr(`Chưa cập nhật được lần đổ dầu mới từ Vietmap: ${e.message}`);
+      }
+    })();
+  }, [viewRefills, loadWaiting]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -238,6 +281,31 @@ export default function Page() {
     });
   }, [rows, q, fStatus, fType, fMethod, fRec, from, to, recon]);
 
+  const shownRefills = useMemo(() => {
+    if ((fStatus && fStatus !== 'waiting') || (fType && fType !== 'fuel') || fMethod || fRec) return [];
+    const s = q.trim().toLowerCase();
+    return refills.filter((r) => {
+      const day = refillDay(r);
+      return (!from || day >= from) && (!to || day <= to) && (!s || refillContent(r).toLowerCase().includes(s));
+    });
+  }, [refills, q, fStatus, fType, fMethod, fRec, from, to]);
+
+  const openRefill = (r) => {
+    setNotice(null);
+    setForm({
+      edit: null,
+      draft: { type: 'fuel', vehicle_id: r.vehicle_id, expense_date: refillDay(r), content: refillContent(r), fuel_refill_id: r.id, title: `Nhập số tiền đổ dầu · ${r.vehicles?.plate || ''}` },
+    });
+  };
+
+  async function skipRefill(r) {
+    if (!window.confirm(`Bỏ qua lần đổ ${Number(r.litres).toLocaleString('vi-VN')} lít của xe ${r.vehicles?.plate} (${refillTime(r)})? Chỉ dùng khi đã có phiếu chi nhập tay cho lần đổ này.`)) return;
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase.rpc('skip_fuel_refill', { p_id: r.id, p_skip: true, p_by: displayLogin(u?.user?.email) });
+    if (error) return window.alert(error.code === 'P0001' ? error.message : 'Không bỏ qua được. Vui lòng thử lại.');
+    loadWaiting();
+  }
+
   const sums = useMemo(() => {
     const t = { all: { n: 0, v: 0 }, pending: { n: 0, v: 0 }, approved: { n: 0, v: 0 }, paid: { n: 0, v: 0 } };
     shown.forEach((r) => {
@@ -274,6 +342,7 @@ export default function Page() {
     if (error) return window.alert(error.code === 'P0001' ? error.message : 'Không xoá được. Vui lòng thử lại.');
     if (ph?.length) await supabase.storage.from(EXPENSE_BUCKET).remove(ph.map((p) => p.path));
     load();
+    if (viewRefills && r.fuel_refill_id) loadWaiting();
   }
 
   return (
@@ -294,6 +363,7 @@ export default function Page() {
         <input aria-label="Tìm kiếm" placeholder="Tìm theo mã phiếu, mục đích, nội dung, người tạo..." value={q} onChange={(e) => setQ(e.target.value)} />
         <select aria-label="Trạng thái" value={fStatus} onChange={(e) => setFStatus(e.target.value)}>
           <option value="">Mọi trạng thái</option>
+          {viewRefills && <option value="waiting">Chờ nhập tiền</option>}
           {Object.entries(expenseStatus).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <select aria-label="Loại chi" value={fType} onChange={(e) => setFType(e.target.value)}>
@@ -315,6 +385,8 @@ export default function Page() {
       </div>
 
       {err && <p className="err" role="alert">{err}</p>}
+      {refillErr && <p className="muted small" role="status">{refillErr}</p>}
+      {refills.length > 0 && <p className="sum-warn" role="status" style={{ marginTop: 0 }}>Có <strong>{refills.length} lần đổ dầu</strong> chờ nhập số tiền.</p>}
       {notice && <p className={notice.ok ? 'ok-msg' : 'err'} role="status" style={{ marginBottom: 10 }}>{notice.text}</p>}
 
       <table className="cus-table exp-table">
@@ -332,6 +404,19 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
+          {shownRefills.map((r) => (
+            <tr key={r.id} className="refill-row">
+              <td className="x-time"><strong>{dmy(refillDay(r))}</strong><div className="muted small">{r.estimated ? 'Không rõ giờ' : refillTime(r).slice(-5)}</div></td>
+              <td className="x-recon"><span className="muted">–</span></td>
+              <td className="x-purpose"><strong>{expenseTypes.fuel}</strong><div className="muted small">{r.vehicles?.plate}</div></td>
+              <td className="x-content">{refillContent(r)}</td>
+              <td className="x-method"><span className="muted">–</span></td>
+              <td className="x-amt"><button type="button" className="btn btn-primary sm" onClick={() => openRefill(r)}>Nhập số tiền</button></td>
+              <td className="x-status"><span className="pill pill-warn">Chờ nhập tiền</span></td>
+              <td className="x-by">Tự động</td>
+              <td className="x-act"><div className="actions"><RowActions view={<ViewBtn onClick={() => openRefill(r)} label="Nhập số tiền" />} del={manageAllExpenses && <DeleteBtn onClick={() => skipRefill(r)} label={`Bỏ qua lần đổ dầu ${r.vehicles?.plate} ${refillTime(r)}`} />} /></div></td>
+            </tr>
+          ))}
           {shown.map((r) => {
             const rc = recon[r.id];
             return (
@@ -369,7 +454,7 @@ export default function Page() {
               </tr>
             );
           })}
-          {!loading && !shown.length && <tr><td colSpan={9} className="muted">Chưa có phiếu chi nào.</td></tr>}
+          {!loading && !shown.length && !shownRefills.length && <tr><td colSpan={9} className="muted">Chưa có phiếu chi nào.</td></tr>}
           {loading && <tr><td colSpan={9} className="muted">Đang tải...</td></tr>}
         </tbody>
       </table>
@@ -388,6 +473,7 @@ export default function Page() {
       {form && (
         <ExpenseForm
           edit={form.edit}
+          draft={form.draft}
           onClose={() => setForm(null)}
           onSaved={({ no, failedPhotos, edited }) => {
             setForm(null);
@@ -396,6 +482,7 @@ export default function Page() {
               text: `${edited ? 'Đã lưu thay đổi phiếu chi' : 'Đã gửi đề xuất chi'} ${expenseCode(no)}.${failedPhotos ? ` Có ${failedPhotos} ảnh chưa xử lý được, hãy mở phiếu để kiểm tra.` : ''}`,
             });
             load();
+            if (viewRefills) loadWaiting();
           }}
         />
       )}

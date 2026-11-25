@@ -143,6 +143,7 @@ const sections = [
       { href: '/nhan-vien/', label: 'Tổng quan', icon: 'grid' },
       { href: '/nhan-vien/don-hang/', label: 'Đơn hàng', icon: 'route' },
       { href: '/nhan-vien/ke-hoach/', label: 'Kế hoạch chạy xe', icon: 'calendar' },
+      { href: '/nhan-vien/dinh-vi/', label: 'Định vị xe', icon: 'pin' },
     ],
   },
   {

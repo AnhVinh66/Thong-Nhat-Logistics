@@ -17,14 +17,16 @@ const todayISO = () => {
 };
 
 // edit: dòng phiếu chi đang sửa (chỉ sửa được khi Chờ duyệt); bỏ trống = Đề xuất Chi mới
-export default function ExpenseForm({ onClose, onSaved, edit = null }) {
+// draft: điền sẵn cho phiếu mới { type, vehicle_id, expense_date, content, fuel_refill_id, title } (VD lần đổ dầu chờ nhập tiền)
+export default function ExpenseForm({ onClose, onSaved, edit = null, draft = null }) {
+  const init = edit || draft;
   const [amount, setAmount] = useState(edit ? String(edit.amount) : '');
-  const [type, setType] = useState(edit?.type || '');
-  const [vehicleId, setVehicleId] = useState(edit?.vehicle_id || '');
+  const [type, setType] = useState(init?.type || '');
+  const [vehicleId, setVehicleId] = useState(init?.vehicle_id || '');
   const [method, setMethod] = useState(edit?.method || '');
   const [bankId, setBankId] = useState(edit?.bank_account_id || '');
-  const [date, setDate] = useState(edit?.expense_date || todayISO());
-  const [content, setContent] = useState(edit?.content || '');
+  const [date, setDate] = useState(init?.expense_date || todayISO());
+  const [content, setContent] = useState(init?.content || '');
   const [vehicles, setVehicles] = useState(null);
   const [banks, setBanks] = useState(null);
   const [files, setFiles] = useState([]);
@@ -98,7 +100,7 @@ export default function ExpenseForm({ onClose, onSaved, edit = null }) {
         return setErr(r.error.code === 'P0001' ? r.error.message : 'Không lưu được thay đổi. Vui lòng thử lại.');
       }
     } else {
-      const ins = await supabase.from('expenses').insert({ ...fields, created_by_name: by }).select('id, expense_no').single();
+      const ins = await supabase.from('expenses').insert({ ...fields, created_by_name: by, ...(draft?.fuel_refill_id ? { fuel_refill_id: draft.fuel_refill_id } : {}) }).select('id, expense_no').single();
       if (ins.error) {
         setBusy(false);
         return setErr(
@@ -136,7 +138,7 @@ export default function ExpenseForm({ onClose, onSaved, edit = null }) {
   const shownOld = oldPhotos.filter((p) => !removed.includes(p.id));
 
   return (
-    <Modal title={edit ? `Sửa phiếu chi ${expenseCode(edit.expense_no)}` : 'Đề xuất Chi'} onClose={onClose} width={780}>
+    <Modal title={edit ? `Sửa phiếu chi ${expenseCode(edit.expense_no)}` : draft?.title || 'Đề xuất Chi'} onClose={onClose} width={780}>
       <form className="form" onSubmit={submit} noValidate>
         <div className="grid-2">
           <div className="field">

@@ -1324,3 +1324,27 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .att-opt.t7 b { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
 .att-opt em { font-style: normal; color: var(--gold); font-weight: 700; }
 .att-opt.clear { color: var(--muted); border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; margin-top: 4px; }
+
+/* Định vị xe (bản đồ Vietmap / OpenStreetMap) */
+.period-bar select { width: auto; min-width: 150px; }
+.gps-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; margin-bottom: 10px; }
+.gps-map { position: relative; z-index: 0; isolation: isolate; height: 560px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font: inherit; }
+.gps-list { display: grid; gap: 8px; align-content: start; max-height: 560px; overflow-y: auto; }
+.gps-item { display: grid; gap: 3px; width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text); font: inherit; font-size: .92rem; text-align: left; cursor: pointer; }
+.gps-item:hover { border-color: #c5cfdf; }
+.gps-item:disabled { cursor: default; }
+.gps-item-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gps-car { position: relative; width: 24px; height: 24px; }
+.gps-dot { width: 24px; height: 24px; display: grid; place-items: center; border: 3px solid white; border-radius: 50%; box-shadow: 0 1px 5px rgba(11, 37, 69, .45); }
+.gps-dot.gps-ok { background: #16a34a; }
+.gps-dot.gps-idle { background: #facc15; }
+.pill-idle { background: #fef08a; color: #713f12; }
+.gps-dot.gps-muted { background: #5b6b82; }
+.gps-dot.gps-err { background: #b91c1c; }
+.gps-arrow { width: 0; height: 0; border: 4px solid transparent; border-top: 0; border-bottom: 9px solid white; }
+.gps-plate { position: absolute; top: 27px; left: 50%; transform: translateX(-50%); padding: 1px 7px; border-radius: 6px; background: #0b2545; color: white; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+.gps-way { width: 22px; height: 22px; }
+.gps-way svg { display: block; width: 22px; height: 22px; }
+.exp-table .refill-row > td { background: #fffbeb; }
+.gps-stop { width: 24px; height: 24px; display: grid; place-items: center; border: 2px solid white; border-radius: 50%; background: #b45309; color: white; font-size: .74rem; font-weight: 700; }
+@media (max-width: 1100px) { .gps-grid { grid-template-columns: 1fr; } }

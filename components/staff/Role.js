@@ -31,6 +31,7 @@ const VIEW = {
   '/nhan-vien/lai-xe': ['staff', 'accountant', 'dispatcher'],
   '/nhan-vien/cham-cong': ['staff', 'accountant'],
   '/nhan-vien/ke-hoach': ['staff', 'accountant', 'dispatcher'],
+  '/nhan-vien/dinh-vi': ['staff', 'accountant', 'dispatcher'],
   '/nhan-vien/tai-khoan': ['staff'],
   '/nhan-vien/ca-nhan': ['staff', 'sales', 'accountant', 'dispatcher'],
 };
@@ -61,6 +62,7 @@ function abilities(role) {
     editCollection: role === 'staff', // sửa / xoá phiếu Thu
     addExpense: is('staff', 'sales', 'accountant', 'dispatcher')(role),
     manageAllExpenses: is('staff', 'accountant')(role), // duyệt, thanh toán, sửa / xoá lệnh Chi của mọi người
+    viewRefills: is('staff', 'accountant', 'dispatcher')(role), // lần đổ dầu từ cảm biến Vietmap
     editPlan: is('staff', 'dispatcher')(role), // xếp xe, đổi thứ tự chuyến
     editVehicle: is('staff', 'accountant', 'dispatcher')(role),
   };
