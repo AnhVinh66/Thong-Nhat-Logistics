@@ -144,6 +144,7 @@ const sections = [
       { href: '/nhan-vien/don-hang/', label: 'Đơn hàng', icon: 'route' },
       { href: '/nhan-vien/ke-hoach/', label: 'Kế hoạch chạy xe', icon: 'calendar' },
       { href: '/nhan-vien/dinh-vi/', label: 'Định vị xe', icon: 'pin' },
+      { href: '/nhan-vien/han-xe/', label: 'Hồ sơ xe', icon: 'alert' },
     ],
   },
   {
@@ -152,6 +153,8 @@ const sections = [
       { href: '/nhan-vien/thu-tien/', label: 'Thu tiền', icon: 'money' },
       { href: '/nhan-vien/chi-tien/', label: 'Chi tiền', icon: 'out' },
       { href: '/nhan-vien/ngan-hang/', label: 'Giao dịch ngân hàng', icon: 'bank' },
+      { href: '/nhan-vien/lai-lo/', label: 'Lãi lỗ theo xe', icon: 'price' },
+      { href: '/nhan-vien/doi-chieu-dau/', label: 'Đối chiếu dầu', icon: 'check' },
     ],
   },
   {

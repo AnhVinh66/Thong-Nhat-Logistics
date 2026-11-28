@@ -2020,3 +2020,184 @@ revoke execute on function public.expenses_c_refill() from public, anon, authent
 revoke execute on function public.expenses_refill_link() from public, anon, authenticated;
 grant execute on function public.record_fuel_refills(jsonb) to authenticated;
 grant execute on function public.skip_fuel_refill(uuid, boolean, text) to authenticated;
+
+-- ===== Lãi lỗ theo xe, khấu hao và lãi ngân hàng (lai-lo.sql) =====
+
+-- ===== Khấu hao xe theo tháng =====
+create table if not exists public.vehicle_depreciation (
+  vehicle_id uuid not null references public.vehicles (id) on delete cascade,
+  year smallint not null check (year between 2000 and 2100),
+  month smallint not null check (month between 1 and 12),
+  amount bigint not null check (amount >= 0),
+  updated_at timestamptz not null default now(),
+  updated_by_name text,
+  primary key (vehicle_id, year, month)
+);
+
+alter table public.vehicle_depreciation enable row level security;
+
+-- Chỉ Admin và Kế toán được xem và nhập khấu hao
+drop policy if exists "fin all" on public.vehicle_depreciation;
+create policy "fin all" on public.vehicle_depreciation
+  for all to authenticated using (public.is_fin()) with check (public.is_fin());
+
+-- ===== Lãi ngân hàng (khoản vay mua xe) theo tháng =====
+-- Nhập tay hoặc import từ file Excel lịch trả nợ của ngân hàng (chỉ lấy cột tiền lãi, không tính tiền gốc).
+create table if not exists public.vehicle_loan_interest (
+  vehicle_id uuid not null references public.vehicles (id) on delete cascade,
+  year smallint not null check (year between 2000 and 2100),
+  month smallint not null check (month between 1 and 12),
+  amount bigint not null check (amount >= 0),
+  updated_at timestamptz not null default now(),
+  updated_by_name text,
+  primary key (vehicle_id, year, month)
+);
+
+alter table public.vehicle_loan_interest enable row level security;
+
+drop policy if exists "fin all" on public.vehicle_loan_interest;
+create policy "fin all" on public.vehicle_loan_interest
+  for all to authenticated using (public.is_fin()) with check (public.is_fin());
+
+-- ===== Lãi lỗ theo xe, chia theo từng tháng =====
+-- Trả về mỗi xe × mỗi tháng nằm trong [p_from, p_to] một dòng (tối đa 5 năm).
+--   * Doanh thu, cầu đường: theo NGÀY VẬN CHUYỂN của đơn hàng (orders.fee, orders.toll_fee).
+--   * Nhiên liệu, bảo dưỡng: theo NGÀY CHI của phiếu chi gắn với xe.
+--     p_include_pending = false: chỉ phiếu đã duyệt / đã thanh toán.
+--   * Khấu hao, lãi ngân hàng: số đã nhập cho tháng đó (người không phải Admin / Kế toán thấy 0).
+drop function if exists public.vehicle_profit(date, date, boolean);  -- bản cũ chưa có cột lãi ngân hàng
+create or replace function public.vehicle_profit(
+  p_from date, p_to date, p_include_pending boolean default false
+) returns table (
+  vehicle_id uuid, plate text, month date, order_count bigint, revenue bigint,
+  toll_cost bigint, fuel_cost bigint, maintenance_cost bigint, depreciation bigint, interest bigint
+)
+language sql stable security invoker set search_path = public as $$
+  with m as (
+    select g::date as m_start,
+           greatest(g::date, p_from) as d_from,
+           least((g + interval '1 month - 1 day')::date, p_to) as d_to
+    from generate_series(date_trunc('month', p_from), date_trunc('month', p_to), interval '1 month') g
+    where p_from is not null and p_to is not null and p_to >= p_from and p_to <= p_from + 1830
+  )
+  select v.id,
+         v.plate,
+         m.m_start,
+         coalesce(o.cnt, 0)::bigint,
+         coalesce(o.rev, 0)::bigint,
+         coalesce(o.toll, 0)::bigint,
+         coalesce(e.fuel, 0)::bigint,
+         coalesce(e.maint, 0)::bigint,
+         coalesce(d.amount, 0)::bigint,
+         coalesce(i.amount, 0)::bigint
+  from public.vehicles v
+  cross join m
+  left join lateral (
+    select count(*) as cnt, sum(x.fee) as rev, sum(x.toll_fee) as toll
+    from public.orders x
+    where x.plate = v.plate and x.ship_date between m.d_from and m.d_to
+  ) o on true
+  left join lateral (
+    select sum(y.amount) filter (where y.type = 'fuel') as fuel,
+           sum(y.amount) filter (where y.type = 'maintenance') as maint
+    from public.expenses y
+    where y.vehicle_id = v.id
+      and y.type in ('fuel', 'maintenance')
+      and y.expense_date between m.d_from and m.d_to
+      and (p_include_pending or y.status in ('approved', 'paid'))
+  ) e on true
+  left join public.vehicle_depreciation d
+    on d.vehicle_id = v.id and d.year = extract(year from m.m_start) and d.month = extract(month from m.m_start)
+  left join public.vehicle_loan_interest i
+    on i.vehicle_id = v.id and i.year = extract(year from m.m_start) and i.month = extract(month from m.m_start)
+  order by v.plate, m.m_start;
+$$;
+
+revoke execute on function public.vehicle_profit(date, date, boolean) from public, anon;
+grant execute on function public.vehicle_profit(date, date, boolean) to authenticated;
+
+-- ===== Đối chiếu dầu (doi-chieu-dau.sql) =====
+
+-- ===== Số lít và đơn giá trên phiếu chi nhiên liệu (chép từ ảnh màn hình cây xăng) =====
+alter table public.expenses add column if not exists litres numeric(8, 2);
+alter table public.expenses add column if not exists unit_price bigint;
+alter table public.expenses drop constraint if exists expenses_litres_check;
+alter table public.expenses add constraint expenses_litres_check check (
+  (litres is null or litres > 0) and (unit_price is null or unit_price > 0)
+  and ((litres is null and unit_price is null) or type = 'fuel')
+);
+
+-- ===== Dòng đối chiếu đã được kiểm tra (key: r:<lần đổ>, e:<phiếu chi>, d:<xe Vietmap>:<thời điểm>) =====
+create table if not exists public.fuel_checks (
+  key text primary key check (length(key) between 3 and 100),
+  note text check (length(note) <= 500),
+  checked_by_name text,
+  checked_at timestamptz not null default now()
+);
+alter table public.fuel_checks enable row level security;
+drop policy if exists "read" on public.fuel_checks;
+create policy "read" on public.fuel_checks for select to authenticated using (public.sees_all());
+drop policy if exists "fin write" on public.fuel_checks;
+create policy "fin write" on public.fuel_checks for all to authenticated using (public.is_fin()) with check (public.is_fin());
+
+-- =====================================================================
+-- Hạn giấy tờ xe và lịch bảo dưỡng (han-xe.sql)
+-- =====================================================================
+
+-- ===== Giấy tờ xe: mỗi lần gia hạn là một dòng mới, dòng có hạn xa nhất là giấy đang dùng =====
+create table if not exists public.vehicle_docs (
+  id uuid primary key default gen_random_uuid(),
+  vehicle_id uuid not null references public.vehicles (id) on delete cascade,
+  kind text not null check (kind in ('registration', 'tnds', 'hull', 'badge', 'road_fee', 'city_permit')),
+  doc_no text check (length(doc_no) <= 100),
+  issued_on date,
+  expires_on date not null,
+  note text check (length(note) <= 500),
+  created_at timestamptz not null default now(),
+  created_by_name text,
+  check (issued_on is null or issued_on <= expires_on)
+);
+create index if not exists vehicle_docs_vehicle_kind on public.vehicle_docs (vehicle_id, kind, expires_on desc);
+alter table public.vehicle_docs enable row level security;
+drop policy if exists "ops all" on public.vehicle_docs;
+create policy "ops all" on public.vehicle_docs for all to authenticated using (public.sees_all()) with check (public.sees_all());
+
+-- ===== Hạng mục bảo dưỡng: chu kỳ theo km, theo tháng, hoặc cả hai (cái nào đến trước) =====
+create table if not exists public.maint_items (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique check (length(name) between 1 and 100),
+  every_km integer check (every_km > 0),
+  every_months smallint check (every_months between 1 and 120),
+  sort smallint not null default 0,
+  check (every_km is not null or every_months is not null)
+);
+alter table public.maint_items enable row level security;
+drop policy if exists "ops all" on public.maint_items;
+create policy "ops all" on public.maint_items for all to authenticated using (public.sees_all()) with check (public.sees_all());
+
+-- Mức thông dụng cho xe tải nhẹ, sửa lại trong CMS cho đúng sổ bảo dưỡng của hãng
+insert into public.maint_items (name, every_km, every_months, sort) values
+  ('Thay dầu máy', 10000, 6, 1),
+  ('Lọc dầu, lọc gió', 20000, 12, 2),
+  ('Lọc nhiên liệu', 30000, 12, 3),
+  ('Má phanh', 40000, null, 4),
+  ('Dầu hộp số, dầu cầu', 40000, 24, 5),
+  ('Lốp xe', 80000, null, 6)
+on conflict (name) do nothing;
+
+-- ===== Các lần đã bảo dưỡng =====
+create table if not exists public.maint_logs (
+  id uuid primary key default gen_random_uuid(),
+  vehicle_id uuid not null references public.vehicles (id) on delete cascade,
+  item_id uuid not null references public.maint_items (id) on delete cascade,
+  done_on date not null,
+  odo_km integer check (odo_km >= 0),
+  note text check (length(note) <= 500),
+  expense_id uuid references public.expenses (id) on delete set null,
+  created_at timestamptz not null default now(),
+  created_by_name text
+);
+create index if not exists maint_logs_vehicle_item on public.maint_logs (vehicle_id, item_id, done_on desc);
+alter table public.maint_logs enable row level security;
+drop policy if exists "ops all" on public.maint_logs;
+create policy "ops all" on public.maint_logs for all to authenticated using (public.sees_all()) with check (public.sees_all());

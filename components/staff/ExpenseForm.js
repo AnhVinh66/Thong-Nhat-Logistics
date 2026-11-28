@@ -27,6 +27,14 @@ export default function ExpenseForm({ onClose, onSaved, edit = null, draft = nul
   const [bankId, setBankId] = useState(edit?.bank_account_id || '');
   const [date, setDate] = useState(init?.expense_date || todayISO());
   const [content, setContent] = useState(init?.content || '');
+  // Phiếu nhiên liệu: số lít và đơn giá chép từ ảnh màn hình cây xăng; số tiền tự tính = lít × đơn giá
+  const [litres, setLitres] = useState(edit?.litres != null ? String(edit.litres).replace('.', ',') : '');
+  const [unitPrice, setUnitPrice] = useState(edit?.unit_price != null ? String(edit.unit_price) : '');
+  const litresNum = Number(String(litres).replace(',', '.'));
+  const fillAmount = (l, p) => {
+    const n = Number(String(l).replace(',', '.'));
+    if (n > 0 && Number(p) > 0) setAmount(String(Math.round(n * Number(p))));
+  };
   const [vehicles, setVehicles] = useState(null);
   const [banks, setBanks] = useState(null);
   const [files, setFiles] = useState([]);
@@ -73,6 +81,8 @@ export default function ExpenseForm({ onClose, onSaved, edit = null, draft = nul
     if (!(amt > 0)) return setErr('Vui lòng nhập số tiền thanh toán.');
     if (!type) return setErr('Vui lòng chọn loại yêu cầu chi.');
     if (needsVehicle(type) && !vehicleId) return setErr('Vui lòng chọn xe cho khoản chi này.');
+    if (type === 'fuel' && !(litresNum > 0 && litresNum < 2000)) return setErr('Vui lòng nhập số lít đổ (theo màn hình cây xăng).');
+    if (type === 'fuel' && !(Number(unitPrice) > 0)) return setErr('Vui lòng nhập đơn giá mỗi lít (theo màn hình cây xăng).');
     if (!method) return setErr('Vui lòng chọn hình thức (Tiền mặt hoặc Chuyển khoản).');
     if (method === 'transfer' && !bankId) return setErr('Vui lòng chọn ngân hàng chi tiền.');
     if (!date) return setErr('Vui lòng chọn ngày chi.');
@@ -87,6 +97,7 @@ export default function ExpenseForm({ onClose, onSaved, edit = null, draft = nul
       method,
       bank_account_id: method === 'transfer' ? bankId : null,
       content: content.trim(),
+      ...(type === 'fuel' ? { litres: Math.round(litresNum * 100) / 100, unit_price: Number(unitPrice) } : edit?.litres != null ? { litres: null, unit_price: null } : {}),
     };
     const { data: u } = await supabase.auth.getUser();
     const by = displayLogin(u?.user?.email);
@@ -97,7 +108,7 @@ export default function ExpenseForm({ onClose, onSaved, edit = null, draft = nul
       const r = await supabase.from('expenses').update({ ...fields, updated_at: new Date().toISOString(), updated_by_name: by }).eq('id', editId);
       if (r.error) {
         setBusy(false);
-        return setErr(r.error.code === 'P0001' ? r.error.message : 'Không lưu được thay đổi. Vui lòng thử lại.');
+        return setErr(r.error.code === 'P0001' ? r.error.message : r.error.code === 'PGRST204' ? 'Phiếu chi chưa có cột Số lít / Đơn giá. Hãy chạy supabase/doi-chieu-dau.sql trên Supabase.' : 'Không lưu được thay đổi. Vui lòng thử lại.');
       }
     } else {
       const ins = await supabase.from('expenses').insert({ ...fields, created_by_name: by, ...(draft?.fuel_refill_id ? { fuel_refill_id: draft.fuel_refill_id } : {}) }).select('id, expense_no').single();
@@ -106,7 +117,9 @@ export default function ExpenseForm({ onClose, onSaved, edit = null, draft = nul
         return setErr(
           ins.error.code === '42P01' || ins.error.code === 'PGRST205'
             ? 'Chưa có bảng chi tiền. Hãy chạy supabase/expenses.sql trên Supabase.'
-            : ins.error.code === 'P0001' ? ins.error.message : 'Không lưu được phiếu chi. Vui lòng thử lại.'
+            : ins.error.code === 'P0001' ? ins.error.message
+            : ins.error.code === 'PGRST204' ? 'Phiếu chi chưa có cột Số lít / Đơn giá. Hãy chạy supabase/doi-chieu-dau.sql trên Supabase.'
+            : 'Không lưu được phiếu chi. Vui lòng thử lại.'
         );
       }
       id = ins.data.id;
@@ -171,6 +184,40 @@ export default function ExpenseForm({ onClose, onSaved, edit = null, draft = nul
             {needsVehicle(type) && vehicles && vehicles.length === 0 && <p className="sum-warn small" style={{ margin: 0 }}>Chưa có xe nào. Hãy thêm ở mục <strong>Danh sách xe</strong> trước.</p>}
           </div>
         </div>
+
+        {type === 'fuel' && (
+          <div className="grid-2">
+            <div className="field">
+              <label htmlFor="e-litres">Số lít đổ *</label>
+              <input
+                id="e-litres"
+                inputMode="decimal"
+                placeholder="VD: 65,4"
+                value={litres}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9.,]/g, '');
+                  setLitres(v);
+                  fillAmount(v, unitPrice);
+                }}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="e-unit">Đơn giá mỗi lít (đồng) *</label>
+              <MoneyInput
+                id="e-unit"
+                value={unitPrice}
+                onChange={(v) => {
+                  setUnitPrice(v);
+                  fillAmount(litres, v);
+                }}
+                placeholder="VD: 19,950"
+              />
+            </div>
+            <p className="muted small" style={{ margin: 0, gridColumn: '1 / -1' }}>
+              Chép số lít và đơn giá từ ảnh màn hình cây xăng. Số tiền thanh toán tự tính = số lít × đơn giá (sửa lại được nếu cây xăng làm tròn).
+            </p>
+          </div>
+        )}
 
         <div className="grid-2">
           <div className="field">

@@ -68,6 +68,7 @@ export default function FleetMap({ vehicles = [], track = [], stops = [], fitKey
   const ref = useRef(null); // { L, map, layer }
   const fitted = useRef(null);
   const [ready, setReady] = useState(false);
+  const [zoom, setZoom] = useState(0); // đổi mức thu phóng thì xếp lại nhãn biển số
 
   useEffect(() => {
     let dead = false;
@@ -76,6 +77,7 @@ export default function FleetMap({ vehicles = [], track = [], stops = [], fitKey
       const map = L.map(box.current, { zoomAnimation: false }).setView([20.98, 105.85], 9);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
       ref.current = { L, map, layer: L.layerGroup().addTo(map), arrows: L.layerGroup().addTo(map) };
+      map.on('zoomend', () => setZoom(map.getZoom()));
       setReady(true);
     });
     return () => {
@@ -108,7 +110,9 @@ export default function FleetMap({ vehicles = [], track = [], stops = [], fitKey
       all.push(at(s));
     });
     vehicles.forEach((v, i) => {
-      const slot = vehicles.slice(0, i).filter((o) => map.distance(at(o), at(v)) < 80).length;
+      // Xe nằm gần nhau trên màn hình (dưới 40 px ở mức thu phóng hiện tại) thì nhãn xếp so le xuống dưới
+      const p = map.latLngToLayerPoint(at(v));
+      const slot = vehicles.slice(0, i).filter((o) => map.latLngToLayerPoint(at(o)).distanceTo(p) < 40).length;
       L.marker(at(v), { icon: carIcon(L, v, slot), title: v.plate }).addTo(layer);
       all.push(at(v));
     });
@@ -117,7 +121,7 @@ export default function FleetMap({ vehicles = [], track = [], stops = [], fitKey
       fitted.current = fitKey;
       map.fitBounds(L.latLngBounds(all), { padding: [40, 40], maxZoom: 15 });
     }
-  }, [ready, vehicles, track, stops, fitKey]);
+  }, [ready, vehicles, track, stops, fitKey, zoom]);
 
   // Vẽ lại mũi tên mỗi khi kéo hoặc thu phóng bản đồ
   useEffect(() => {

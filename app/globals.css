@@ -278,6 +278,44 @@ code { background: var(--soft); padding: 1px 6px; border-radius: 6px; }
 .input-plus { display: flex; gap: 8px; }
 .input-plus input { flex: 1; min-width: 0; }
 .plus-btn { min-width: 46px; padding: 0; font-size: 1.4rem; line-height: 1; }
+/* Đối chiếu dầu */
+.fc-title { font-size: 1.15rem; margin: 22px 0 2px; }
+.fc-sub { margin: 0 0 8px; }
+.admin .staff-table.fc-table td { white-space: nowrap; }
+.fc-table { width: 100%; }
+.fc-table .fc-addr { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.fc-table tr.fc-err > td { background: #fef2f2; }
+.fc-table tr.fc-warn > td { background: #fffbeb; }
+.fc-map .gps-map { height: 460px; }
+/* Hạn xe & bảo dưỡng */
+.due-table { width: 100%; }
+.admin .staff-table.due-table td { white-space: nowrap; }
+.due-table tr.fc-err > td { background: #fef2f2; }
+.due-table tr.fc-warn > td { background: #fffbeb; }
+.due-grid { width: 100%; }
+.admin .staff-table.due-grid th { white-space: nowrap; vertical-align: bottom; }
+.admin .staff-table.due-grid td.due-cell { padding: 4px; }
+.due-cell button { display: flex; flex-direction: column; gap: 2px; width: 100%; min-height: 48px; justify-content: center; text-align: left; padding: 6px 10px; border: 1px solid transparent; border-radius: 8px; background: transparent; font: inherit; color: inherit; cursor: pointer; }
+.due-cell button:hover { border-color: var(--line); background: var(--soft); }
+.due-cell button span { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+.due-cell button strong { white-space: nowrap; }
+.due-cell.due-ok button strong { color: #15803d; }
+.due-cell.due-warn button { background: #fffbeb; border-color: #fde68a; }
+.due-cell.due-warn button strong { color: #b45309; }
+.due-cell.due-err button { background: #fef2f2; border-color: #fecaca; }
+.due-cell.due-err button strong { color: #b91c1c; }
+.admin .staff-table.due-grid td:first-child { white-space: nowrap; }
+.due-cell button span.due-2nd { color: inherit; font-weight: 600; }
+.due-cell.due-err button span.due-2nd { color: #b91c1c; }
+.due-cell.due-warn button span.due-2nd { color: #b45309; }
+.due-cell.due-ok button span.due-2nd { color: #15803d; }
+.modal .due-hist { width: 100%; }
+.due-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.due-items { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; align-items: start; }
+.due-items .staff-table { width: 100%; }
+.due-item-form { display: grid; gap: 10px; }
+.due-items.closed { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
+.due-add { margin-top: 10px; }
 .ok-msg { color: var(--ok); font-size: .88rem; margin: 0; }
 
 /* Chứng từ giao hàng */
@@ -1327,9 +1365,9 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 
 /* Định vị xe (bản đồ Vietmap / OpenStreetMap) */
 .period-bar select { width: auto; min-width: 150px; }
-.gps-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; margin-bottom: 10px; }
-.gps-map { position: relative; z-index: 0; isolation: isolate; height: 560px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font: inherit; }
-.gps-list { display: grid; gap: 8px; align-content: start; max-height: 560px; overflow-y: auto; }
+.gps-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; margin-bottom: 10px; }
+.gps-map { position: relative; z-index: 0; isolation: isolate; height: max(600px, calc(100vh - 190px)); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font: inherit; }
+.gps-list { display: grid; gap: 8px; align-content: start; max-height: max(600px, calc(100vh - 190px)); overflow-y: auto; }
 .gps-item { display: grid; gap: 3px; width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text); font: inherit; font-size: .92rem; text-align: left; cursor: pointer; }
 .gps-item:hover { border-color: #c5cfdf; }
 .gps-item:disabled { cursor: default; }
@@ -1346,5 +1384,19 @@ select:disabled { background: var(--soft); color: #8a96ab; cursor: not-allowed; 
 .gps-way { width: 22px; height: 22px; }
 .gps-way svg { display: block; width: 22px; height: 22px; }
 .exp-table .refill-row > td { background: #fffbeb; }
+/* Lãi lỗ theo xe */
+.admin .staff-table.pl-table td { white-space: nowrap; }
+.dep-table { width: auto; }
+.dep-table td { padding: 6px 6px; }
+.dep-table td:first-child, .dep-table th { white-space: nowrap; }
+.dep-table input { width: 180px; min-width: 0; padding: 6px 8px; font-size: .88rem; text-align: right; }
+.dep-table input.dirty { border-color: #f59e0b; background: #fffbeb; }
+.dep-table .dep-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 180px; }
+.dep-table .dep-actions input { grid-column: 1 / -1; width: 100%; text-align: left; }
+.dep-table .dep-actions .btn { padding-inline: 6px; white-space: nowrap; }
+.dep-table .dep-tools > td { vertical-align: top; }
+.li-preview { max-height: 260px; overflow-y: auto; }
+.li-preview table { width: 100%; }
+.lp-ok { color: var(--ok); font-size: .88rem; margin: 0 0 10px; font-weight: 600; }
 .gps-stop { width: 24px; height: 24px; display: grid; place-items: center; border: 2px solid white; border-radius: 50%; background: #b45309; color: white; font-size: .74rem; font-weight: 700; }
 @media (max-width: 1100px) { .gps-grid { grid-template-columns: 1fr; } }
